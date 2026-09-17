@@ -1,0 +1,194 @@
+{
+  "lastUpdated": "2026-09-03",
+  "validUntil": "2026-09-30",
+  "source": "Chócale / Autofact - Septiembre 2026",
+  "discounts": [
+    {
+      "id": "consorcio-aramco-lun",
+      "card": "Banco Consorcio",
+      "cardType": "crédito",
+      "brand": "Aramco",
+      "discountPerLiter": 150,
+      "days": [1],
+      "app": "App Aramco",
+      "maxMonthly": 10000,
+      "notes": "Abono en estado de cuenta siguiente o subsiguiente"
+    },
+    {
+      "id": "cencosud-copec-lun",
+      "card": "Cencosud Scotiabank",
+      "cardType": "crédito",
+      "brand": "Copec",
+      "discountPerLiter": 100,
+      "days": [1],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Tarjetas Mastercard Clásica, Platinum y Black"
+    },
+    {
+      "id": "liderbci-shell-mar",
+      "card": "Lider BCI",
+      "cardType": "crédito",
+      "brand": "Shell",
+      "discountPerLiter": 100,
+      "days": [2],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": ""
+    },
+    {
+      "id": "bcointerncional-copec-mar",
+      "card": "Banco Internacional",
+      "cardType": "crédito",
+      "brand": "Copec",
+      "discountPerLiter": 100,
+      "days": [2],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Tarjetas Mastercard Clásica, Gold y Black"
+    },
+    {
+      "id": "itau-copec-mar",
+      "card": "Itaú Legend",
+      "cardType": "crédito",
+      "brand": "Copec",
+      "discountPerLiter": 100,
+      "days": [2],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Cupón desde página del banco"
+    },
+    {
+      "id": "ripley-aramco-mie",
+      "card": "Banco Ripley",
+      "cardType": "crédito/débito",
+      "brand": "Aramco",
+      "discountPerLiter": 150,
+      "days": [3],
+      "app": "App Aramco",
+      "maxMonthly": 8000,
+      "notes": "Plus=$100, Silver=$125, Gold=$150. Cashback los jueves"
+    },
+    {
+      "id": "scotiabank-shell-jue",
+      "card": "Scotiabank",
+      "cardType": "crédito",
+      "brand": "Shell",
+      "discountPerLiter": 200,
+      "days": [4],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Hasta $200 según tarjeta enrolada"
+    },
+    {
+      "id": "coopeuch-copec-jue",
+      "card": "Coopeuch",
+      "cardType": "crédito",
+      "brand": "Copec",
+      "discountPerLiter": 200,
+      "days": [4],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Crédito=$200, Débito=$100"
+    },
+    {
+      "id": "tenpo-copec-vie",
+      "card": "Tenpo",
+      "cardType": "crédito/prepago",
+      "brand": "Copec",
+      "discountPerLiter": 150,
+      "days": [5],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Entre $50 y $300 según nivel"
+    },
+    {
+      "id": "tenpo-shell-vie",
+      "card": "Tenpo",
+      "cardType": "crédito/prepago",
+      "brand": "Shell",
+      "discountPerLiter": 150,
+      "days": [5],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Entre $50 y $300 según nivel"
+    },
+    {
+      "id": "tenpo-aramco-vie",
+      "card": "Tenpo",
+      "cardType": "crédito/prepago",
+      "brand": "Aramco",
+      "discountPerLiter": 150,
+      "days": [5],
+      "app": "App Aramco",
+      "maxMonthly": null,
+      "notes": "Entre $50 y $300 según nivel"
+    },
+    {
+      "id": "machbank-copec-sab",
+      "card": "MACHBANK",
+      "cardType": "crédito",
+      "brand": "Copec",
+      "discountPerLiter": 100,
+      "days": [6],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": ""
+    },
+    {
+      "id": "losheroes-shell-sab",
+      "card": "Los Héroes Prepago",
+      "cardType": "prepago",
+      "brand": "Shell",
+      "discountPerLiter": 300,
+      "days": [6],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Cashback. Afiliados Caja Los Héroes hasta $4.000 en cualquier bencinera"
+    },
+    {
+      "id": "sbpay-aramco-sab",
+      "card": "SBpay",
+      "cardType": "prepago",
+      "brand": "Aramco",
+      "discountPerLiter": 150,
+      "days": [6],
+      "app": "App Aramco",
+      "maxMonthly": null,
+      "notes": ""
+    },
+    {
+      "id": "bice-shell-dom",
+      "card": "Banco BICE",
+      "cardType": "crédito",
+      "brand": "Shell",
+      "discountPerLiter": 100,
+      "days": [0],
+      "app": "App Shell",
+      "maxMonthly": 5000,
+      "notes": "1 carga al mes"
+    },
+    {
+      "id": "spin-aramco-dom",
+      "card": "SPIN Visa",
+      "cardType": "prepago",
+      "brand": "Aramco",
+      "discountPerLiter": 150,
+      "days": [0],
+      "app": "App Aramco",
+      "maxMonthly": null,
+      "notes": ""
+    },
+    {
+      "id": "cabify-copec",
+      "card": "Cabify (Conductor)",
+      "cardType": "socio",
+      "brand": "Copec",
+      "discountPerLiter": 350,
+      "days": [0,1,2,3,4,5,6],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Hasta $350 según categoría. Máx 6 cargas/mes, 40L/carga"
+    }
+  ]
+}

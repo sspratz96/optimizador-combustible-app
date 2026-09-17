@@ -1,0 +1,104 @@
+name: Actualizar precios CNE
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login y obtener token
+        run: |
+          TOKEN=$(curl -s -X POST "https://api.cne.cl/api/login" \
+            --data-urlencode "email=${{ secrets.CNE_EMAIL }}" \
+            --data-urlencode "password=${{ secrets.CNE_PASSWORD }}" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])")
+          echo "CNE_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Descargar estaciones
+        run: |
+          curl -s --compressed "https://api.cne.cl/api/v4/estaciones" \
+            -H "Authorization: Bearer $CNE_TOKEN" \
+            -o raw_stations.json
+
+          python3 -c "import json; json.load(open('raw_stations.json'))" || {
+            echo "ERROR: respuesta no es JSON válido"; cat raw_stations.json | head -c 500; exit 1;
+          }
+
+      - name: Transformar a formato app (solo RM)
+        run: |
+          python3 << 'PYEOF'
+          import json
+          from datetime import datetime
+
+          with open('raw_stations.json') as f:
+              raw = json.load(f)
+
+          stations = []
+          for item in raw:
+              ub = item.get('ubicacion', {})
+              # Solo Región Metropolitana
+              if ub.get('codigo_region') != '13':
+                  continue
+              if item.get('en_mantenimiento') == 1:
+                  continue
+
+              lat = ub.get('latitud')
+              lng = ub.get('longitud')
+              if not lat or not lng:
+                  continue
+
+              brand_raw = item.get('distribuidor', {}).get('marca', '')
+              # Normalizar marca
+              brand_map = {
+                  'COPEC': 'Copec', 'SHELL': 'Shell',
+                  'ARAMCO': 'Aramco', 'PETROBRAS': 'Petrobras',
+                  'TERPEL': 'Terpel',
+              }
+              brand = brand_map.get(brand_raw.upper(), brand_raw.title())
+
+              precios = item.get('precios', {})
+              prices = {}
+              fuel_map = {'93': '93', '95': '95', '97': '97', 'DI': 'diesel'}
+              for api_key, app_key in fuel_map.items():
+                  if api_key in precios:
+                      try:
+                          p = float(precios[api_key]['precio'])
+                          prices[app_key] = round(p)
+                      except (ValueError, KeyError):
+                          pass
+
+              if not prices:
+                  continue
+
+              stations.append({
+                  'id': item.get('codigo', ''),
+                  'name': f"{brand} {ub.get('direccion', '')}".strip(),
+                  'brand': brand,
+                  'address': ub.get('direccion', ''),
+                  'comuna': ub.get('nombre_comuna', ''),
+                  'lat': float(lat),
+                  'lng': float(lng),
+                  'prices': prices,
+              })
+
+          with open('data/stations.json', 'w') as f:
+              json.dump(stations, f, ensure_ascii=False)
+
+          print(f"✅ {len(stations)} estaciones RM procesadas")
+          PYEOF
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/stations.json
+          git diff --cached --quiet || git commit -m "🔄 Precios $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push

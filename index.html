@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BencinApp — Encuentra la bencina más barata en Santiago</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3344;
+  --text: #e4e6ed;
+  --text2: #8b8fa4;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --copec: #e63946;
+  --shell: #f5b731;
+  --aramco: #22a867;
+  --success: #22c55e;
+  --warn: #f59e0b;
+  --radius: 10px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── HEADER ─── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 1000;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header h1 span { font-size: 22px; }
+.day-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+}
+.btn-config {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── FUEL TABS ─── */
+.fuel-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.fuel-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font);
+}
+.fuel-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ─── MAP ─── */
+.map-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+#map { width: 100%; height: 100%; }
+.leaflet-tile-pane { filter: brightness(0.75) contrast(1.1) saturate(0.3); }
+.station-marker {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+.marker-copec { background: var(--copec); }
+.marker-shell { background: var(--shell); color: #333; }
+.marker-aramco { background: var(--aramco); }
+.marker-best {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.3), 0 2px 8px rgba(0,0,0,0.4) !important;
+  transform: scale(1.15);
+}
+.leaflet-popup-content-wrapper {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border);
+}
+.leaflet-popup-tip { background: var(--surface) !important; }
+.popup-inner { font-size: 13px; line-height: 1.5; min-width: 180px; }
+.popup-inner .brand { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.popup-inner .address { color: var(--text2); font-size: 12px; margin-bottom: 6px; }
+.popup-inner .price-row { display: flex; justify-content: space-between; align-items: center; }
+.popup-inner .effective { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--success); }
+.popup-inner .discount-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(34,197,94,0.15);
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ─── LOADING ─── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 16px;
+}
+.loading-overlay .spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-overlay p { color: var(--text2); font-size: 14px; }
+
+/* ─── BOTTOM PANEL ─── */
+.panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  z-index: 800;
+  max-height: 55vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+  transition: max-height 0.3s ease;
+}
+.panel.collapsed { max-height: 64px; }
+.panel-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 10px auto 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+.panel-header h2 { font-size: 15px; font-weight: 600; }
+.panel-header .count { color: var(--text2); font-size: 13px; }
+.results-list {
+  overflow-y: auto;
+  padding: 0 12px 16px;
+  flex: 1;
+}
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.result-card:hover, .result-card.highlight { border-color: var(--accent); }
+.result-card.best { border-color: var(--success); background: rgba(34,197,94,0.06); }
+.result-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text2);
+  min-width: 24px;
+  text-align: center;
+}
+.result-card.best .result-rank { color: var(--success); }
+.result-brand-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.result-info { flex: 1; min-width: 0; }
+.result-name {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.result-meta {
+  color: var(--text2);
+  font-size: 12px;
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.result-numbers { text-align: right; flex-shrink: 0; }
+.result-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 700;
+}
+.result-card.best .result-total { color: var(--success); }
+.result-effective {
+  font-size: 11px;
+  color: var(--text2);
+}
+.result-discount {
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* ─── CONFIG MODAL ─── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+.modal h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.modal label {
+  display: block;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.modal input[type="number"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 16px;
+  outline: none;
+}
+.modal input[type="number"]:focus { border-color: var(--accent); }
+.cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.card-toggle {
+  padding: 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  font-family: var(--font);
+}
+.card-toggle.active {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.1);
+  color: var(--text);
+}
+.modal .btn-apply {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  margin-top: 8px;
+}
+
+/* ─── DESKTOP ─── */
+@media (min-width: 768px) {
+  .panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: auto;
+    width: 380px;
+    border-radius: var(--radius);
+    max-height: none;
+  }
+  .panel.collapsed { max-height: none; }
+  .panel-handle { display: none; }
+  .modal-backdrop { align-items: center; }
+  .modal { border-radius: var(--radius); max-width: 480px; }
+}
+
+/* ─── MISC ─── */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.today-deals {
+  padding: 8px 16px;
+  background: rgba(59,130,246,0.08);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--accent2);
+  flex-shrink: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.today-deals strong { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <p id="loadingText">Obteniendo tu ubicación…</p>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <h1><span>⛽</span> BencinApp</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="day-badge" id="dayBadge"></span>
+    <button class="btn-config" id="btnConfig" title="Configuración">⚙</button>
+  </div>
+</div>
+
+<!-- Today's deals bar -->
+<div class="today-deals" id="todayDeals"></div>
+
+<!-- Fuel type tabs -->
+<div class="fuel-tabs" id="fuelTabs">
+  <button class="fuel-tab active" data-fuel="93">93 oct</button>
+  <button class="fuel-tab" data-fuel="95">95 oct</button>
+  <button class="fuel-tab" data-fuel="97">97 oct</button>
+  <button class="fuel-tab" data-fuel="diesel">Diésel</button>
+</div>
+
+<!-- Map -->
+<div class="map-wrap">
+  <div id="map"></div>
+  <!-- Results panel -->
+  <div class="panel" id="panel">
+    <div class="panel-handle" id="panelHandle"></div>
+    <div class="panel-header">
+      <h2>Mejores opciones</h2>
+      <span class="count" id="resultCount"></span>
+    </div>
+    <div class="results-list" id="resultsList">
+      <div class="empty-state">Calculando las mejores opciones…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Config Modal -->
+<div class="modal-backdrop" id="configModal">
+  <div class="modal">
+    <h3>Configuración</h3>
+
+    <label>Litros a cargar</label>
+    <input type="number" id="inputLiters" value="40" min="5" max="100" step="5">
+
+    <label>Rendimiento del auto (km/L)</label>
+    <input type="number" id="inputEfficiency" value="12" min="4" max="30" step="0.5">
+
+    <label>Radio de búsqueda (km)</label>
+    <input type="number" id="inputRadius" value="8" min="1" max="30" step="1">
+
+    <label style="margin-bottom:10px;">Mis tarjetas</label>
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <button class="btn-apply" id="btnApply">Aplicar y recalcular</button>
+  </div>
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DATA
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const DISCOUNTS = [
+  { card:"Banco Consorcio", brand:"Aramco", discount:150, days:[1], app:"App Aramco" },
+  { card:"Cencosud Scotiabank", brand:"Copec", discount:100, days:[1], app:"App Copec" },
+  { card:"Lider BCI", brand:"Shell", discount:100, days:[2], app:"App Shell" },
+  { card:"Banco Internacional", brand:"Copec", discount:100, days:[2], app:"App Copec" },
+  { card:"Itaú Legend", brand:"Copec", discount:100, days:[2], app:"App Copec" },
+  { card:"Banco Ripley", brand:"Aramco", discount:150, days:[3], app:"App Aramco" },
+  { card:"Scotiabank", brand:"Shell", discount:200, days:[4], app:"App Shell" },
+  { card:"Coopeuch", brand:"Copec", discount:200, days:[4], app:"App Copec" },
+  { card:"Tenpo", brand:"Copec", discount:150, days:[5], app:"App Copec" },
+  { card:"Tenpo", brand:"Shell", discount:150, days:[5], app:"App Shell" },
+  { card:"Tenpo", brand:"Aramco", discount:150, days:[5], app:"App Aramco" },
+  { card:"MACHBANK", brand:"Copec", discount:100, days:[6], app:"App Copec" },
+  { card:"Los Héroes Prepago", brand:"Shell", discount:300, days:[6], app:"App Shell" },
+  { card:"SBpay", brand:"Aramco", discount:150, days:[6], app:"App Aramco" },
+  { card:"Banco BICE", brand:"Shell", discount:100, days:[0], app:"App Shell" },
+  { card:"SPIN Visa", brand:"Aramco", discount:150, days:[0], app:"App Aramco" },
+  { card:"Cabify (Conductor)", brand:"Copec", discount:350, days:[0,1,2,3,4,5,6], app:"App Copec" },
+];
+
+const ALL_CARDS = [...new Set(DISCOUNTS.map(d => d.card))].sort();
+
+const DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+// Sample stations — replace with CNE API data via GitHub Actions
+const SAMPLE_STATIONS = [
+  {id:"s1",name:"Copec Av. Apoquindo",brand:"Copec",address:"Av. Apoquindo 6000, Las Condes",lat:-33.4130,lng:-70.5780,prices:{93:1428,95:1510,97:1552,diesel:1095}},
+  {id:"s2",name:"Shell Providencia",brand:"Shell",address:"Av. Providencia 2150",lat:-33.4265,lng:-70.6120,prices:{93:1432,95:1515,97:1558,diesel:1098}},
+  {id:"s3",name:"Aramco Irarrázaval",brand:"Aramco",address:"Av. Irarrázaval 3200, Ñuñoa",lat:-33.4465,lng:-70.6020,prices:{93:1418,95:1498,97:1540,diesel:1088}},
+  {id:"s4",name:"Copec Maipú Centro",brand:"Copec",address:"Av. Pajaritos 900, Maipú",lat:-33.5100,lng:-70.7580,prices:{93:1410,95:1490,97:1535,diesel:1080}},
+  {id:"s5",name:"Shell La Florida",brand:"Shell",address:"Av. Vicuña Mackenna 7200, La Florida",lat:-33.5180,lng:-70.5930,prices:{93:1425,95:1505,97:1548,diesel:1092}},
+  {id:"s6",name:"Aramco Gran Avenida",brand:"Aramco",address:"Gran Av. José Miguel Carrera 5400, San Miguel",lat:-33.4920,lng:-70.6530,prices:{93:1412,95:1492,97:1536,diesel:1082}},
+  {id:"s7",name:"Copec Vitacura",brand:"Copec",address:"Av. Vitacura 4500",lat:-33.3990,lng:-70.5900,prices:{93:1440,95:1522,97:1565,diesel:1105}},
+  {id:"s8",name:"Shell Las Condes",brand:"Shell",address:"Av. Las Condes 10200",lat:-33.4030,lng:-70.5350,prices:{93:1435,95:1518,97:1560,diesel:1100}},
+  {id:"s9",name:"Aramco Macul",brand:"Aramco",address:"Av. Macul 3800",lat:-33.4630,lng:-70.5990,prices:{93:1415,95:1495,97:1538,diesel:1085}},
+  {id:"s10",name:"Copec Puente Alto",brand:"Copec",address:"Av. Concha y Toro 1200, Puente Alto",lat:-33.6050,lng:-70.5760,prices:{93:1405,95:1485,97:1530,diesel:1075}},
+  {id:"s11",name:"Shell Santiago Centro",brand:"Shell",address:"Alameda 2800, Santiago",lat:-33.4510,lng:-70.6630,prices:{93:1430,95:1512,97:1555,diesel:1095}},
+  {id:"s12",name:"Aramco Recoleta",brand:"Aramco",address:"Av. Recoleta 3100",lat:-33.4180,lng:-70.6450,prices:{93:1408,95:1488,97:1532,diesel:1078}},
+  {id:"s13",name:"Copec Lo Barnechea",brand:"Copec",address:"Camino El Alba 1100, Lo Barnechea",lat:-33.3550,lng:-70.5200,prices:{93:1445,95:1528,97:1570,diesel:1110}},
+  {id:"s14",name:"Shell Huechuraba",brand:"Shell",address:"Av. Américo Vespucio 1500, Huechuraba",lat:-33.3680,lng:-70.6350,prices:{93:1422,95:1502,97:1545,diesel:1090}},
+  {id:"s15",name:"Aramco Independencia",brand:"Aramco",address:"Av. Independencia 3500",lat:-33.4150,lng:-70.6560,prices:{93:1410,95:1490,97:1534,diesel:1080}},
+  {id:"s16",name:"Copec Peñalolén",brand:"Copec",address:"Av. Grecia 8500, Peñalolén",lat:-33.4720,lng:-70.5500,prices:{93:1420,95:1500,97:1544,diesel:1088}},
+  {id:"s17",name:"Shell Quilicura",brand:"Shell",address:"Av. Manuel Antonio Matta 600, Quilicura",lat:-33.3580,lng:-70.7250,prices:{93:1418,95:1498,97:1542,diesel:1085}},
+  {id:"s18",name:"Aramco Pudahuel",brand:"Aramco",address:"Av. San Pablo 8900, Pudahuel",lat:-33.4350,lng:-70.7700,prices:{93:1405,95:1485,97:1528,diesel:1075}},
+  {id:"s19",name:"Copec Ñuñoa",brand:"Copec",address:"Av. Irarrázaval 4800, Ñuñoa",lat:-33.4500,lng:-70.5850,prices:{93:1426,95:1508,97:1550,diesel:1092}},
+  {id:"s20",name:"Shell Estación Central",brand:"Shell",address:"Alameda 4200, Estación Central",lat:-33.4520,lng:-70.6850,prices:{93:1420,95:1500,97:1545,diesel:1088}},
+  {id:"s21",name:"Aramco San Bernardo",brand:"Aramco",address:"Av. Portales 1200, San Bernardo",lat:-33.5850,lng:-70.6980,prices:{93:1398,95:1478,97:1522,diesel:1070}},
+  {id:"s22",name:"Copec La Reina",brand:"Copec",address:"Av. Larraín 7200, La Reina",lat:-33.4480,lng:-70.5450,prices:{93:1432,95:1514,97:1556,diesel:1095}},
+  {id:"s23",name:"Shell Cerrillos",brand:"Shell",address:"Av. Pedro Aguirre Cerda 7000, Cerrillos",lat:-33.4950,lng:-70.7120,prices:{93:1415,95:1495,97:1538,diesel:1082}},
+  {id:"s24",name:"Aramco Renca",brand:"Aramco",address:"Av. Dorsal 1500, Renca",lat:-33.3950,lng:-70.7100,prices:{93:1400,95:1480,97:1524,diesel:1072}},
+  {id:"s25",name:"Copec Providencia Sur",brand:"Copec",address:"Av. Salvador 1800, Providencia",lat:-33.4400,lng:-70.6180,prices:{93:1438,95:1520,97:1562,diesel:1100}},
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  STATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+let state = {
+  userLat: null,
+  userLng: null,
+  fuel: '93',
+  liters: 40,
+  efficiency: 12,
+  radius: 8,
+  myCards: [],
+  stations: [],
+  ranked: [],
+};
+
+let map, userMarker, markers = [], popupOpen = false;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function init() {
+  setupUI();
+  showDayInfo();
+  await getLocation();
+  initMap();
+  state.stations = await loadStations();
+  await recalculate();
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOCATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      fallbackLocation();
+      resolve();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        state.userLat = pos.coords.latitude;
+        state.userLng = pos.coords.longitude;
+        resolve();
+      },
+      () => { fallbackLocation(); resolve(); },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+}
+
+function fallbackLocation() {
+  // Default: Plaza Italia, Santiago
+  state.userLat = -33.4372;
+  state.userLng = -70.6345;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  MAP
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function initMap() {
+  map = L.map('map', { zoomControl: false }).setView([state.userLat, state.userLng], 13);
+  L.control.zoom({ position: 'topleft' }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  userMarker = L.marker([state.userLat, state.userLng], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="width:16px;height:16px;background:var(--accent);border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.3);"></div>',
+      iconSize: [16,16],
+      iconAnchor: [8,8],
+    })
+  }).addTo(map);
+}
+
+function renderMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  const bestId = state.ranked.length > 0 ? state.ranked[0].station.id : null;
+
+  state.ranked.forEach((r, i) => {
+    const s = r.station;
+    const brandClass = `marker-${s.brand.toLowerCase()}`;
+    const isBest = s.id === bestId;
+    const html = `<div class="station-marker ${brandClass} ${isBest ? 'marker-best' : ''}">${i+1}</div>`;
+
+    const marker = L.marker([s.lat, s.lng], {
+      icon: L.divIcon({ className:'', html, iconSize:[32,32], iconAnchor:[16,16] })
+    }).addTo(map);
+
+    marker.on('click', () => {
+      const discountInfo = r.bestDiscount
+        ? `<div class="discount-tag">-$${r.bestDiscount.discount}/L · ${r.bestDiscount.card}</div>`
+        : '';
+      marker.bindPopup(`
+        <div class="popup-inner">
+          <div class="brand">${s.brand} — ${s.name.replace(s.brand+' ','')}</div>
+          <div class="address">${s.address}</div>
+          <div style="margin:6px 0">${discountInfo}</div>
+          <div class="price-row">
+            <span style="color:var(--text2);font-size:12px;">Precio efectivo</span>
+            <span class="effective">$${r.effectivePrice}/L</span>
+          </div>
+          <div style="margin-top:6px;font-size:12px;color:var(--text2);">
+            ${r.distanceKm.toFixed(1)} km · ${r.durationMin} min · Traslado $${Math.round(r.travelCost).toLocaleString('es-CL')}
+          </div>
+          <div style="margin-top:6px;font-size:14px;font-weight:700;">
+            Costo total: $${Math.round(r.totalCost).toLocaleString('es-CL')}
+          </div>
+        </div>
+      `).openPopup();
+    });
+
+    markers.push(marker);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  LOAD STATIONS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function loadStations() {
+  try {
+    const resp = await fetch('data/stations.json');
+    if (resp.ok) return await resp.json();
+  } catch(e) { /* fall through */ }
+  return SAMPLE_STATIONS;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DISTANCE (Haversine + OSRM)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function getDrivingDistance(lat1, lng1, lat2, lng2) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.code === 'Ok' && data.routes.length > 0) {
+      return {
+        distanceKm: data.routes[0].distance / 1000,
+        durationMin: Math.round(data.routes[0].duration / 60),
+      };
+    }
+  } catch(e) { /* fallback */ }
+  const d = haversine(lat1, lng1, lat2, lng2);
+  return { distanceKm: d * 1.3, durationMin: Math.round(d * 1.3 / 0.5) };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  CALCULATE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function getDiscountsForStation(brand) {
+  const today = new Date().getDay();
+  return DISCOUNTS.filter(d =>
+    d.brand === brand &&
+    d.days.includes(today) &&
+    state.myCards.includes(d.card)
+  );
+}
+
+async function recalculate() {
+  document.getElementById('loadingText').textContent = 'Calculando rutas…';
+
+  // Filter by radius (haversine quick check)
+  const nearby = state.stations.filter(s => {
+    const d = haversine(state.userLat, state.userLng, s.lat, s.lng);
+    return d <= state.radius;
+  });
+
+  // Get driving distances (limit to 20 closest)
+  const sorted = nearby
+    .map(s => ({ station: s, hav: haversine(state.userLat, state.userLng, s.lat, s.lng) }))
+    .sort((a,b) => a.hav - b.hav)
+    .slice(0, 20);
+
+  const results = [];
+
+  // Batch OSRM calls with small delays to avoid rate limiting
+  for (let i = 0; i < sorted.length; i++) {
+    const s = sorted[i].station;
+    const price = s.prices[state.fuel];
+    if (!price) continue;
+
+    const discounts = getDiscountsForStation(s.brand);
+    const bestDiscount = discounts.length > 0
+      ? discounts.reduce((a, b) => a.discount > b.discount ? a : b)
+      : null;
+    const effectivePrice = price - (bestDiscount ? bestDiscount.discount : 0);
+
+    const route = await getDrivingDistance(state.userLat, state.userLng, s.lat, s.lng);
+
+    // Round trip fuel cost
+    const roundTripKm = route.distanceKm * 2;
+    const fuelForTrip = roundTripKm / state.efficiency;
+    const travelCost = fuelForTrip * effectivePrice;
+
+    const totalCost = (state.liters * effectivePrice) + travelCost;
+
+    results.push({
+      station: s,
+      basePrice: price,
+      bestDiscount,
+      effectivePrice,
+      distanceKm: route.distanceKm,
+      durationMin: route.durationMin,
+      travelCost,
+      totalCost,
+    });
+
+    // Small delay every 5 requests
+    if (i > 0 && i % 5 === 0) await sleep(200);
+  }
+
+  results.sort((a, b) => a.totalCost - b.totalCost);
+  state.ranked = results;
+
+  renderMarkers();
+  renderResults();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  RENDER RESULTS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function renderResults() {
+  const list = document.getElementById('resultsList');
+  const count = document.getElementById('resultCount');
+  count.textContent = `${state.ranked.length} estaciones`;
+
+  if (state.ranked.length === 0) {
+    list.innerHTML = '<div class="empty-state">No hay estaciones en tu radio de búsqueda.<br>Prueba aumentándolo en ⚙ Configuración.</div>';
+    return;
+  }
+
+  const bestTotal = state.ranked[0].totalCost;
+
+  list.innerHTML = state.ranked.map((r, i) => {
+    const s = r.station;
+    const brandColor = s.brand === 'Copec' ? 'var(--copec)' : s.brand === 'Shell' ? 'var(--shell)' : 'var(--aramco)';
+    const saving = Math.round(r.totalCost - bestTotal);
+    const isBest = i === 0;
+    const discountText = r.bestDiscount ? `-$${r.bestDiscount.discount}/L ${r.bestDiscount.card}` : '';
+
+    return `
+      <div class="result-card ${isBest ? 'best' : ''}" data-idx="${i}">
+        <span class="result-rank">${i+1}</span>
+        <span class="result-brand-dot" style="background:${brandColor}"></span>
+        <div class="result-info">
+          <div class="result-name">${s.brand} · ${s.name.replace(s.brand+' ','')}</div>
+          <div class="result-meta">
+            <span>${r.distanceKm.toFixed(1)} km · ${r.durationMin} min</span>
+          </div>
+          ${discountText ? `<div class="result-discount">${discountText}</div>` : ''}
+        </div>
+        <div class="result-numbers">
+          <div class="result-total">$${Math.round(r.totalCost).toLocaleString('es-CL')}</div>
+          <div class="result-effective">$${r.effectivePrice}/L</div>
+          ${!isBest && saving > 0 ? `<div style="font-size:11px;color:var(--warn);">+$${saving.toLocaleString('es-CL')}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Click to fly to station
+  list.querySelectorAll('.result-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.idx);
+      const r = state.ranked[idx];
+      map.flyTo([r.station.lat, r.station.lng], 15, { duration: 0.8 });
+      markers[idx]?.fire('click');
+    });
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  UI
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function setupUI() {
+  // Fuel tabs
+  document.querySelectorAll('.fuel-tab').forEach(tab => {
+    tab.addEventListener('click', async () => {
+      document.querySelector('.fuel-tab.active')?.classList.remove('active');
+      tab.classList.add('active');
+      state.fuel = tab.dataset.fuel;
+      await recalculate();
+    });
+  });
+
+  // Panel collapse toggle
+  const panel = document.getElementById('panel');
+  document.getElementById('panelHandle').addEventListener('click', () => {
+    panel.classList.toggle('collapsed');
+  });
+
+  // Config modal
+  const modal = document.getElementById('configModal');
+  document.getElementById('btnConfig').addEventListener('click', () => {
+    renderCardsGrid();
+    document.getElementById('inputLiters').value = state.liters;
+    document.getElementById('inputEfficiency').value = state.efficiency;
+    document.getElementById('inputRadius').value = state.radius;
+    modal.classList.add('open');
+  });
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  document.getElementById('btnApply').addEventListener('click', async () => {
+    state.liters = parseFloat(document.getElementById('inputLiters').value) || 40;
+    state.efficiency = parseFloat(document.getElementById('inputEfficiency').value) || 12;
+    state.radius = parseFloat(document.getElementById('inputRadius').value) || 8;
+    state.myCards = Array.from(document.querySelectorAll('.card-toggle.active')).map(el => el.dataset.card);
+    modal.classList.remove('open');
+    await recalculate();
+  });
+}
+
+function renderCardsGrid() {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = ALL_CARDS.map(card => {
+    const active = state.myCards.includes(card) ? 'active' : '';
+    return `<button class="card-toggle ${active}" data-card="${card}">${card}</button>`;
+  }).join('');
+  grid.querySelectorAll('.card-toggle').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('active'));
+  });
+}
+
+function showDayInfo() {
+  const today = new Date().getDay();
+  const dayName = DAYS_ES[today];
+  document.getElementById('dayBadge').textContent = dayName;
+
+  const todayDiscounts = DISCOUNTS.filter(d => d.days.includes(today));
+  const dealsBar = document.getElementById('todayDeals');
+  if (todayDiscounts.length === 0) {
+    dealsBar.innerHTML = '<strong>Hoy:</strong> Sin descuentos bancarios disponibles';
+  } else {
+    const deals = todayDiscounts.map(d => `<strong>${d.brand}</strong> -$${d.discount}/L con ${d.card}`).join(' · ');
+    dealsBar.innerHTML = `<strong>Hoy ${dayName}:</strong> ${deals}`;
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  GO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+init();
+</script>
+</body>
+</html>
