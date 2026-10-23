@@ -69,7 +69,15 @@ def fetch_image_b64(url):
         data = r.read()
     if len(data) > 4_000_000:
         raise ValueError(f"imagen muy grande ({len(data)} bytes)")
-    return base64.b64encode(data).decode()
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        mt = "image/png"
+    elif data[:3] == b"\xff\xd8\xff":
+        mt = "image/jpeg"
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        mt = "image/webp"
+    else:
+        raise ValueError("la respuesta no es una imagen reconocible")
+    return base64.b64encode(data).decode(), mt
 
 
 def gather_sources():
@@ -91,12 +99,18 @@ def gather_sources():
             for chart_id in dict.fromkeys(re.findall(r'datawrapper\.dwcdn\.net/([A-Za-z0-9]+)/', html)):
                 if len(images) >= MAX_IMAGES:
                     break
-                img_url = f"https://datawrapper.dwcdn.net/{chart_id}/full.png"
-                try:
-                    images.append(fetch_image_b64(img_url))
-                    print(f"OK tabla-imagen: {img_url}")
-                except Exception as e:
-                    print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
+                candidates = []
+                m = re.search(r'src="([^"]*datawrapper\.dwcdn\.net/' + chart_id + r'/[^"]*)"', html)
+                if m:
+                    candidates.append(m.group(1).replace('&amp;', '&').replace('&#038;', '&'))
+                candidates.append(f"https://datawrapper.dwcdn.net/{chart_id}/full.png")
+                for img_url in candidates:
+                    try:
+                        images.append(fetch_image_b64(img_url))
+                        print(f"OK tabla-imagen: {img_url}")
+                        break
+                    except Exception as e:
+                        print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
         except Exception as e:
             print(f"AVISO: no se pudo leer {url}: {e}")
     if not sources:
@@ -129,8 +143,8 @@ def call_claude(sources, images):
         user += ("\n\nSe adjuntan ademas las tablas (imagenes) de las mismas fuentes con el "
                  "detalle completo; si la tabla y el texto difieren, manda la tabla.")
     content = [{"type": "text", "text": user}] + [
-        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}}
-        for b64 in images
+        {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}}
+        for b64, mt in images
     ]
     payload = {
         "model": MODEL,
@@ -257,6 +271,15 @@ def main():
     if os.path.exists("discounts.json"):
         with open("discounts.json", encoding="utf-8") as f:
             old_doc = json.load(f)
+
+    # Si lo material no cambio, conservar la redaccion anterior (evita PRs de ruido)
+    material_fields = ("card", "brand", "discountPerLiter", "days", "maxMonthly")
+    old_by_id = {e["id"]: e for e in old_doc.get("discounts", [])}
+    for e in new_doc["discounts"]:
+        prev = old_by_id.get(e["id"])
+        if prev and all(prev.get(k) == e.get(k) for k in material_fields):
+            for k in ("cardType", "app", "notes"):
+                e[k] = prev.get(k, e[k])
 
     same_data = old_doc.get("discounts") == new_doc["discounts"] \
         and old_doc.get("validUntil") == new_doc["validUntil"]
