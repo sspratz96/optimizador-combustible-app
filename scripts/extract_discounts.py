@@ -138,7 +138,7 @@ def gather_sources():
     return sources, images
 
 
-def call_claude(sources, images):
+def call_claude(sources, images, current):
     system = (
         "Extraes descuentos de combustible en Chile desde texto de paginas web. "
         "Responde UNICAMENTE un array JSON, sin markdown ni texto adicional. "
@@ -149,9 +149,9 @@ def call_claude(sources, images):
         "\"brand\": str (solo Copec, Shell o Aramco; descarta otras marcas), "
         "\"fuel\": str o null (SOLO si el descuento aplica a un unico combustible: "
         "'93'|'95'|'97'|'diesel'; null si aplica a todos), "
-        "\"discountPerLiter\": int (pesos por litro; si es un rango, usa el maximo; si el "
-        "descuento esta expresado en PORCENTAJE, OMITE la entrada completa — nunca lo "
-        "conviertas a pesos), "
+        "\"discountPerLiter\": int (pesos por litro; si es un rango, usa SIEMPRE el maximo, "
+        "ej: 'entre $50 y $300' => 300; si el descuento esta expresado en PORCENTAJE, OMITE "
+        "la entrada completa — nunca lo conviertas a pesos), "
         "\"days\": array de int (0=domingo ... 6=sabado), "
         "\"app\": str (app o medio para activar el descuento), "
         "\"maxMonthly\": int o null (tope mensual en pesos si se indica), "
@@ -168,6 +168,13 @@ def call_claude(sources, images):
     user = f"Mes actual: {today.strftime('%Y-%m')}. Fuentes:\n\n" + "\n\n".join(
         f"=== FUENTE: {url} ===\n{text}" for url, text in sources
     )
+    if current:
+        ref = [{"card": e["card"], "brand": e["brand"], "days": e["days"]} for e in current]
+        user += ("\n\nNOMBRES CANONICOS ya usados por la app: "
+                 + json.dumps(ref, ensure_ascii=False)
+                 + "\nSi un beneficio de las fuentes corresponde a uno de esta lista (misma "
+                 "tarjeta/convenio y marca), usa EXACTAMENTE el mismo valor de 'card', aunque "
+                 "la fuente lo redacte distinto. Nombres nuevos solo para beneficios nuevos.")
     if images:
         user += ("\n\nSe adjuntan ademas las tablas (imagenes) de las mismas fuentes con el "
                  "detalle completo; si la tabla y el texto difieren, manda la tabla. Una tabla "
@@ -179,6 +186,7 @@ def call_claude(sources, images):
     payload = {
         "model": MODEL,
         "max_tokens": 8192,
+        "temperature": 0,
         "system": system,
         "messages": [{"role": "user", "content": content}],
     }
@@ -297,16 +305,16 @@ def diff_summary(old, new):
 
 
 def main():
-    sources, images = gather_sources()
-    raw = call_claude(sources, images)
-    print(f"Entradas extraidas por el modelo: {len(raw)}")
-    discounts = validate(raw)
-    new_doc = build_doc(discounts, [u for u, _ in sources])
-
     old_doc = {}
     if os.path.exists("discounts.json"):
         with open("discounts.json", encoding="utf-8") as f:
             old_doc = json.load(f)
+
+    sources, images = gather_sources()
+    raw = call_claude(sources, images, old_doc.get("discounts", []))
+    print(f"Entradas extraidas por el modelo: {len(raw)}")
+    discounts = validate(raw)
+    new_doc = build_doc(discounts, [u for u, _ in sources])
 
     # Si lo material no cambio, conservar la redaccion anterior (evita PRs de ruido)
     material_fields = ("card", "brand", "fuel", "discountPerLiter", "days", "maxMonthly")
