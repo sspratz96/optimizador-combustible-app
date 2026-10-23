@@ -19,36 +19,38 @@ jobs:
           CODE=$(curl -s -o resp.json -w '%{http_code}' -X POST "https://api.cne.cl/api/login" \
             --data-urlencode "email=${{ secrets.CNE_EMAIL }}" \
             --data-urlencode "password=${{ secrets.CNE_PASSWORD }}")
-          echo "HTTP $CODE"
-          python3 << 'PYEOF'
-          import json
-          try:
-              d = json.load(open('resp.json'))
-          except Exception as e:
-              print('Respuesta no es JSON:', e)
-              print(open('resp.json').read()[:300])
-              raise SystemExit(1)
-          if isinstance(d, dict):
-              print('Claves nivel 1:', sorted(d.keys()))
-              for k in ('message', 'error', 'errors', 'detail', 'status'):
-                  if k in d:
-                      print(f'{k}:', d[k])
-              for k, v in d.items():
-                  if isinstance(v, dict):
-                      print(f'Claves dentro de "{k}":', sorted(v.keys()))
-          else:
-              print('Tipo de respuesta:', type(d).__name__, '— largo:', len(d))
-          PYEOF
+          if [ "$CODE" != "200" ]; then
+            echo "ERROR: login CNE devolvió HTTP $CODE"
+            head -c 300 resp.json; echo
+            exit 1
+          fi
+          TOKEN=$(python3 -c "import json; print(json.load(open('resp.json'))['token'])")
+          if [ -z "$TOKEN" ]; then
+            echo "ERROR: login OK pero token vacío"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "CNE_TOKEN=$TOKEN" >> $GITHUB_ENV
 
       - name: Descargar estaciones
         run: |
-          curl -s --compressed "https://api.cne.cl/api/v4/estaciones" \
-            -H "Authorization: Bearer $CNE_TOKEN" \
-            -o raw_stations.json
-
-          python3 -c "import json; json.load(open('raw_stations.json'))" || {
-            echo "ERROR: respuesta no es JSON válido"; cat raw_stations.json | head -c 500; exit 1;
-          }
+          CODE=$(curl -s --compressed -o raw_stations.json -w '%{http_code}' \
+            "https://api.cne.cl/api/v4/estaciones" \
+            -H "Authorization: Bearer $CNE_TOKEN")
+          if [ "$CODE" != "200" ]; then
+            echo "ERROR: descarga devolvió HTTP $CODE"
+            head -c 300 raw_stations.json; echo
+            exit 1
+          fi
+          python3 << 'PYEOF'
+          import json, sys
+          d = json.load(open('raw_stations.json'))
+          if not isinstance(d, list) or len(d) == 0:
+              print(f"ERROR: se esperaba una lista de estaciones, llegó {type(d).__name__}")
+              print(open('raw_stations.json').read()[:300])
+              sys.exit(1)
+          print(f"{len(d)} estaciones descargadas (todo Chile)")
+          PYEOF
 
       - name: Transformar a formato app (solo RM)
         run: |
@@ -62,8 +64,8 @@ jobs:
           stations = []
           for item in raw:
               ub = item.get('ubicacion', {})
-              # Solo Región Metropolitana
-              if ub.get('codigo_region') != '13':
+              # Solo Región Metropolitana (el código puede llegar como str o int)
+              if str(ub.get('codigo_region')) != '13':
                   continue
               if item.get('en_mantenimiento') == 1:
                   continue
