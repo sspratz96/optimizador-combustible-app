@@ -142,9 +142,13 @@ def call_claude(sources, images):
     system = (
         "Extraes descuentos de combustible en Chile desde texto de paginas web. "
         "Responde UNICAMENTE un array JSON, sin markdown ni texto adicional. "
-        "Cada elemento: {\"card\": str (nombre del banco/tarjeta/convenio), "
+        "Cada elemento: {\"card\": str (nombre CORTO del emisor o convenio, ej. 'Banco Security', "
+        "'Lider Bci', 'Mercado Pago', 'Cencosud Scotiabank'; NUNCA prefijos como 'Tarjeta de "
+        "credito de' — el tipo de tarjeta va en cardType), "
         "\"cardType\": str (credito|debito|prepago|socio o combinaciones con '/'), "
         "\"brand\": str (solo Copec, Shell o Aramco; descarta otras marcas), "
+        "\"fuel\": str o null (SOLO si el descuento aplica a un unico combustible: "
+        "'93'|'95'|'97'|'diesel'; null si aplica a todos), "
         "\"discountPerLiter\": int (pesos por litro; si es un rango, usa el maximo), "
         "\"days\": array de int (0=domingo ... 6=sabado), "
         "\"app\": str (app o medio para activar el descuento), "
@@ -222,10 +226,15 @@ def validate(raw):
             mm = int(mm) if mm not in (None, "", 0) else None
             if mm is not None and not (1000 <= mm <= 100000):
                 mm = None
+            fuel = e.get("fuel")
+            fuel = str(fuel).strip().lower() if fuel not in (None, "") else None
+            if fuel not in (None, "93", "95", "97", "diesel"):
+                fuel = None
             entry = {
                 "card": str(e["card"]).strip(),
                 "cardType": str(e.get("cardType", "")).strip(),
                 "brand": brand,
+                "fuel": fuel,
                 "discountPerLiter": disc,
                 "days": days,
                 "app": str(e.get("app", "")).strip(),
@@ -297,7 +306,7 @@ def main():
             old_doc = json.load(f)
 
     # Si lo material no cambio, conservar la redaccion anterior (evita PRs de ruido)
-    material_fields = ("card", "brand", "discountPerLiter", "days", "maxMonthly")
+    material_fields = ("card", "brand", "fuel", "discountPerLiter", "days", "maxMonthly")
     old_by_id = {e["id"]: e for e in old_doc.get("discounts", [])}
     for e in new_doc["discounts"]:
         prev = old_by_id.get(e["id"])

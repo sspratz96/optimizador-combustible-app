@@ -487,6 +487,7 @@ async function loadDiscounts() {
     DISCOUNTS = data.discounts.map(d => ({
       card: d.card,
       brand: d.brand,
+      fuel: d.fuel ?? null,
       discount: d.discountPerLiter,
       days: d.days || [],
       app: d.app,
@@ -785,6 +786,7 @@ function getDiscountsForStation(brand) {
   const today = new Date().getDay();
   return DISCOUNTS.filter(d =>
     d.brand === brand &&
+    (!d.fuel || d.fuel === state.fuel) &&
     d.days.includes(today) &&
     state.myCards.includes(d.card)
   );
