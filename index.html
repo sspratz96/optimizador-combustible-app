@@ -477,27 +477,29 @@ body {
 //  DATA
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const DISCOUNTS = [
-  { card:"Banco Consorcio", brand:"Aramco", discount:150, days:[1], app:"App Aramco" },
-  { card:"Cencosud Scotiabank", brand:"Copec", discount:100, days:[1], app:"App Copec" },
-  { card:"Lider BCI", brand:"Shell", discount:100, days:[2], app:"App Shell" },
-  { card:"Banco Internacional", brand:"Copec", discount:100, days:[2], app:"App Copec" },
-  { card:"Itaú Legend", brand:"Copec", discount:100, days:[2], app:"App Copec" },
-  { card:"Banco Ripley", brand:"Aramco", discount:150, days:[3], app:"App Aramco" },
-  { card:"Scotiabank", brand:"Shell", discount:200, days:[4], app:"App Shell" },
-  { card:"Coopeuch", brand:"Copec", discount:200, days:[4], app:"App Copec" },
-  { card:"Tenpo", brand:"Copec", discount:150, days:[5], app:"App Copec" },
-  { card:"Tenpo", brand:"Shell", discount:150, days:[5], app:"App Shell" },
-  { card:"Tenpo", brand:"Aramco", discount:150, days:[5], app:"App Aramco" },
-  { card:"MACHBANK", brand:"Copec", discount:100, days:[6], app:"App Copec" },
-  { card:"Los Héroes Prepago", brand:"Shell", discount:300, days:[6], app:"App Shell" },
-  { card:"SBpay", brand:"Aramco", discount:150, days:[6], app:"App Aramco" },
-  { card:"Banco BICE", brand:"Shell", discount:100, days:[0], app:"App Shell" },
-  { card:"SPIN Visa", brand:"Aramco", discount:150, days:[0], app:"App Aramco" },
-  { card:"Cabify (Conductor)", brand:"Copec", discount:350, days:[0,1,2,3,4,5,6], app:"App Copec" },
-];
+let DISCOUNTS = [];
+let ALL_CARDS = [];
+let discountsMeta = { validUntil: null, loaded: false };
 
-const ALL_CARDS = [...new Set(DISCOUNTS.map(d => d.card))].sort();
+async function loadDiscounts() {
+  try {
+    const resp = await fetch('discounts.json');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data || !Array.isArray(data.discounts)) return;
+    DISCOUNTS = data.discounts.map(d => ({
+      card: d.card,
+      brand: d.brand,
+      discount: d.discountPerLiter,
+      days: d.days || [],
+      app: d.app,
+      maxMonthly: d.maxMonthly ?? null,
+      notes: d.notes || '',
+    }));
+    ALL_CARDS = [...new Set(DISCOUNTS.map(d => d.card))].sort();
+    discountsMeta = { validUntil: data.validUntil || null, loaded: true };
+  } catch(e) { /* loaded queda en false; showDayInfo lo advierte */ }
+}
 
 const DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
@@ -554,6 +556,7 @@ let map, userMarker, markers = [], popupOpen = false;
 
 async function init() {
   setupUI();
+  await loadDiscounts();
   showDayInfo();
   await getLocation();
   initMap();
@@ -924,13 +927,24 @@ function showDayInfo() {
   const dayName = DAYS_ES[today];
   document.getElementById('dayBadge').textContent = dayName;
 
-  const todayDiscounts = DISCOUNTS.filter(d => d.days.includes(today));
   const dealsBar = document.getElementById('todayDeals');
+
+  if (!discountsMeta.loaded) {
+    dealsBar.innerHTML = '<strong>⚠ No se pudieron cargar los descuentos</strong> — precios sin descuento';
+    return;
+  }
+
+  let expiredNote = '';
+  if (discountsMeta.validUntil && new Date(discountsMeta.validUntil + 'T23:59:59') < new Date()) {
+    expiredNote = ` · <strong>⚠ válidos hasta ${escapeHtml(discountsMeta.validUntil)}, pueden haber cambiado</strong>`;
+  }
+
+  const todayDiscounts = DISCOUNTS.filter(d => d.days.includes(today));
   if (todayDiscounts.length === 0) {
-    dealsBar.innerHTML = '<strong>Hoy:</strong> Sin descuentos bancarios disponibles';
+    dealsBar.innerHTML = `<strong>Hoy:</strong> Sin descuentos bancarios disponibles${expiredNote}`;
   } else {
-    const deals = todayDiscounts.map(d => `<strong>${d.brand}</strong> -$${d.discount}/L con ${d.card}`).join(' · ');
-    dealsBar.innerHTML = `<strong>Hoy ${dayName}:</strong> ${deals}`;
+    const deals = todayDiscounts.map(d => `<strong>${escapeHtml(d.brand)}</strong> -$${d.discount}/L con ${escapeHtml(d.card)}`).join(' · ');
+    dealsBar.innerHTML = `<strong>Hoy ${dayName}:</strong> ${deals}${expiredNote}`;
   }
 }
 

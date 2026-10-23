@@ -41,15 +41,19 @@ El Action hace login automático, obtiene un token fresco, descarga todas las es
 
 ### 4. Actualizar descuentos mensuales
 
-Edita `data/discounts.json` cada mes con los nuevos descuentos. La estructura es:
+Edita `discounts.json` (raíz del repo) cada mes: actualiza `lastUpdated`, `validUntil` y cada entrada de `discounts`. Si `validUntil` queda en el pasado, la app muestra una advertencia. La estructura de cada entrada es:
 
 ```json
 {
+  "id": "banco-marca-dia",
   "card": "Nombre del banco/tarjeta",
+  "cardType": "crédito",
   "brand": "Copec|Shell|Aramco",
-  "discount": 150,
+  "discountPerLiter": 150,
   "days": [1],
-  "app": "App Copec"
+  "app": "App Copec",
+  "maxMonthly": 10000,
+  "notes": ""
 }
 ```
 
