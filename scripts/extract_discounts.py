@@ -8,6 +8,7 @@ Salida:
   - exit 0 con discounts.json y pr_body.md reescritos -> hay cambios (el workflow abre PR)
   - exit 1 -> error o extraccion sospechosa; NO toca discounts.json
 """
+import base64
 import json
 import os
 import re
@@ -18,9 +19,9 @@ from calendar import monthrange
 from datetime import date
 from html.parser import HTMLParser
 
-AUTOFACT_URL = "https://www.autofact.cl/blog/mi-auto/conduccion/descuento-bencina"
 CHOCALE_TAG_URL = "https://chocale.cl/temas/descuentos-bencinas/"
 MODEL = "claude-haiku-4-5-20251001"
+MAX_IMAGES = 2
 VALID_BRANDS = {"Copec", "Shell", "Aramco"}
 VALID_DAYS = set(range(7))
 MIN_ENTRIES = 8          # tipicamente hay ~15; menos que esto = extraccion degenerada
@@ -62,9 +63,18 @@ def html_to_text(html):
     return "\n".join(p.parts)[:MAX_CHARS_PER_PAGE]
 
 
+def fetch_image_b64(url):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        data = r.read()
+    if len(data) > 4_000_000:
+        raise ValueError(f"imagen muy grande ({len(data)} bytes)")
+    return base64.b64encode(data).decode()
+
+
 def gather_sources():
-    """Autofact directo + hasta 2 articulos recientes de Chocale sobre bencina."""
-    sources = []
+    """Hasta 2 articulos recientes de Chocale, con sus tablas-imagen (Datawrapper)."""
+    sources, images = [], []
     tag_html = fetch(CHOCALE_TAG_URL)
     links = re.findall(r'href="(https://chocale\.cl/\d{4}/[^"]*bencina[^"]*)"', tag_html)
     seen = []
@@ -73,19 +83,29 @@ def gather_sources():
             seen.append(u)
         if len(seen) == 2:
             break
-    for url in seen + [AUTOFACT_URL]:
+    for url in seen:
         try:
-            sources.append((url, html_to_text(fetch(url))))
+            html = fetch(url)
+            sources.append((url, html_to_text(html)))
             print(f"OK fuente: {url}")
+            for chart_id in dict.fromkeys(re.findall(r'datawrapper\.dwcdn\.net/([A-Za-z0-9]+)/', html)):
+                if len(images) >= MAX_IMAGES:
+                    break
+                img_url = f"https://datawrapper.dwcdn.net/{chart_id}/full.png"
+                try:
+                    images.append(fetch_image_b64(img_url))
+                    print(f"OK tabla-imagen: {img_url}")
+                except Exception as e:
+                    print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
         except Exception as e:
             print(f"AVISO: no se pudo leer {url}: {e}")
     if not sources:
         print("ERROR: ninguna fuente disponible")
         sys.exit(1)
-    return sources
+    return sources, images
 
 
-def call_claude(sources):
+def call_claude(sources, images):
     system = (
         "Extraes descuentos de combustible en Chile desde texto de paginas web. "
         "Responde UNICAMENTE un array JSON, sin markdown ni texto adicional. "
@@ -105,11 +125,18 @@ def call_claude(sources):
     user = f"Mes actual: {today.strftime('%Y-%m')}. Fuentes:\n\n" + "\n\n".join(
         f"=== FUENTE: {url} ===\n{text}" for url, text in sources
     )
+    if images:
+        user += ("\n\nSe adjuntan ademas las tablas (imagenes) de las mismas fuentes con el "
+                 "detalle completo; si la tabla y el texto difieren, manda la tabla.")
+    content = [{"type": "text", "text": user}] + [
+        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}}
+        for b64 in images
+    ]
     payload = {
         "model": MODEL,
         "max_tokens": 8192,
         "system": system,
-        "messages": [{"role": "user", "content": user}],
+        "messages": [{"role": "user", "content": content}],
     }
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
@@ -221,8 +248,8 @@ def diff_summary(old, new):
 
 
 def main():
-    sources = gather_sources()
-    raw = call_claude(sources)
+    sources, images = gather_sources()
+    raw = call_claude(sources, images)
     discounts = validate(raw)
     new_doc = build_doc(discounts, [u for u, _ in sources])
 
