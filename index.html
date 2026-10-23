@@ -648,7 +648,7 @@ function renderMarkers() {
             <span class="effective">$${r.effectivePrice}/L</span>
           </div>
           <div style="margin-top:6px;font-size:12px;color:var(--text2);">
-            ${r.distanceKm.toFixed(1)} km · ${r.durationMin} min · Traslado $${Math.round(r.travelCost).toLocaleString('es-CL')}
+            ${r.estimated ? '~' : ''}${r.distanceKm.toFixed(1)} km · ${r.estimated ? '~' : ''}${r.durationMin} min · Traslado $${Math.round(r.travelCost).toLocaleString('es-CL')}
           </div>
           <div style="margin-top:6px;font-size:14px;font-weight:700;">
             Costo total: $${Math.round(r.totalCost).toLocaleString('es-CL')}
@@ -719,20 +719,49 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-async function getDrivingDistance(lat1, lng1, lat2, lng2) {
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-    if (data.code === 'Ok' && data.routes.length > 0) {
-      return {
-        distanceKm: data.routes[0].distance / 1000,
-        durationMin: Math.round(data.routes[0].duration / 60),
-      };
-    }
-  } catch(e) { /* fallback */ }
-  const d = haversine(lat1, lng1, lat2, lng2);
-  return { distanceKm: d * 1.3, durationMin: Math.round(d * 1.3 / 0.5) };
+const routeCache = new Map(); // station.id → {distanceKm, durationMin, estimated:false}
+// Supuesto: la ubicación del usuario se fija una vez en init(), por eso el caché
+// no se invalida. Si algún día se agrega "re-ubicar", hay que hacer routeCache.clear().
+
+async function fetchRoutes(stations) {
+  const missing = stations.filter(s => !routeCache.has(s.id));
+
+  if (missing.length > 0) {
+    try {
+      const coords = [
+        `${state.userLng},${state.userLat}`,
+        ...missing.map(s => `${s.lng},${s.lat}`)
+      ].join(';');
+      const url = `https://router.project-osrm.org/table/v1/driving/${coords}?sources=0&annotations=duration,distance`;
+
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const resp = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+
+      const data = await resp.json();
+      if (data.code === 'Ok' && Array.isArray(data.distances) && Array.isArray(data.durations)) {
+        missing.forEach((s, i) => {
+          const dist = data.distances[0][i + 1];
+          const dur = data.durations[0][i + 1];
+          if (dist != null && dur != null) {
+            routeCache.set(s.id, {
+              distanceKm: dist / 1000,
+              durationMin: Math.round(dur / 60),
+              estimated: false,
+            });
+          }
+        });
+      }
+    } catch(e) { /* lo que falte sale estimado abajo, sin cachear */ }
+  }
+
+  return new Map(stations.map(s => {
+    const cached = routeCache.get(s.id);
+    if (cached) return [s.id, cached];
+    const d = haversine(state.userLat, state.userLng, s.lat, s.lng) * 1.3;
+    return [s.id, { distanceKm: d, durationMin: Math.round(d / 0.5), estimated: true }];
+  }));
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -751,23 +780,17 @@ function getDiscountsForStation(brand) {
 async function recalculate() {
   document.getElementById('loadingText').textContent = 'Calculando rutas…';
 
-  // Filter by radius (haversine quick check)
-  const nearby = state.stations.filter(s => {
-    const d = haversine(state.userLat, state.userLng, s.lat, s.lng);
-    return d <= state.radius;
-  });
-
-  // Get driving distances (limit to 20 closest)
-  const sorted = nearby
+  // Filtro por radio (haversine rápido) y top 20 más cercanas
+  const sorted = state.stations
     .map(s => ({ station: s, hav: haversine(state.userLat, state.userLng, s.lat, s.lng) }))
+    .filter(x => x.hav <= state.radius)
     .sort((a,b) => a.hav - b.hav)
     .slice(0, 20);
 
-  const results = [];
+  const routes = await fetchRoutes(sorted.map(x => x.station));
 
-  // Batch OSRM calls with small delays to avoid rate limiting
-  for (let i = 0; i < sorted.length; i++) {
-    const s = sorted[i].station;
+  const results = [];
+  for (const { station: s } of sorted) {
     const price = s.prices[state.fuel];
     if (!price) continue;
 
@@ -777,9 +800,9 @@ async function recalculate() {
       : null;
     const effectivePrice = price - (bestDiscount ? bestDiscount.discount : 0);
 
-    const route = await getDrivingDistance(state.userLat, state.userLng, s.lat, s.lng);
+    const route = routes.get(s.id);
 
-    // Round trip fuel cost
+    // Costo de combustible ida y vuelta
     const roundTripKm = route.distanceKm * 2;
     const fuelForTrip = roundTripKm / state.efficiency;
     const travelCost = fuelForTrip * effectivePrice;
@@ -793,12 +816,10 @@ async function recalculate() {
       effectivePrice,
       distanceKm: route.distanceKm,
       durationMin: route.durationMin,
+      estimated: route.estimated,
       travelCost,
       totalCost,
     });
-
-    // Small delay every 5 requests
-    if (i > 0 && i % 5 === 0) await sleep(200);
   }
 
   results.sort((a, b) => a.totalCost - b.totalCost);
@@ -807,8 +828,6 @@ async function recalculate() {
   renderMarkers();
   renderResults();
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function escapeHtml(v) {
   return String(v).replace(/[&<>"']/g, c =>
@@ -845,7 +864,7 @@ function renderResults() {
         <div class="result-info">
           <div class="result-name">${escapeHtml(s.brand)} · ${escapeHtml(s.name.replace(s.brand+' ',''))}</div>
           <div class="result-meta">
-            <span>${r.distanceKm.toFixed(1)} km · ${r.durationMin} min</span>
+            <span>${r.estimated ? '~' : ''}${r.distanceKm.toFixed(1)} km · ${r.durationMin} min</span>
           </div>
           ${discountText ? `<div class="result-discount">${discountText}</div>` : ''}
         </div>
