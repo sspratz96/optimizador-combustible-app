@@ -21,7 +21,7 @@ from html.parser import HTMLParser
 
 CHOCALE_TAG_URL = "https://chocale.cl/temas/descuentos-bencinas/"
 MODEL = "claude-haiku-4-5-20251001"
-MAX_IMAGES = 2
+MAX_IMAGE_PARTS = 12  # franjas de imagen en total (una tabla alta se rebana)
 VALID_BRANDS = {"Copec", "Shell", "Aramco"}
 VALID_DAYS = set(range(7))
 MIN_ENTRIES = 8          # tipicamente hay ~15; menos que esto = extraccion degenerada
@@ -63,21 +63,29 @@ def html_to_text(html):
     return "\n".join(p.parts)[:MAX_CHARS_PER_PAGE]
 
 
-def fetch_image_b64(url):
+def fetch_image_parts(url):
+    """Descarga una imagen y la rebana en franjas horizontales legibles."""
+    import io
+    from PIL import Image
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=30) as r:
         data = r.read()
-    if len(data) > 4_000_000:
+    if len(data) > 8_000_000:
         raise ValueError(f"imagen muy grande ({len(data)} bytes)")
-    if data[:8] == b"\x89PNG\r\n\x1a\n":
-        mt = "image/png"
-    elif data[:3] == b"\xff\xd8\xff":
-        mt = "image/jpeg"
-    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        mt = "image/webp"
-    else:
-        raise ValueError("la respuesta no es una imagen reconocible")
-    return base64.b64encode(data).decode(), mt
+    img = Image.open(io.BytesIO(data))
+    img.load()
+    w, h = img.size
+    strip, overlap = 1300, 80  # ~1300px por franja; traslape para no cortar filas
+    parts, top = [], 0
+    while top < h:
+        bottom = min(h, top + strip)
+        buf = io.BytesIO()
+        img.crop((0, top, w, bottom)).convert("RGB").save(buf, format="PNG")
+        parts.append(base64.b64encode(buf.getvalue()).decode())
+        if bottom >= h:
+            break
+        top = bottom - overlap
+    return parts
 
 
 def gather_sources():
@@ -97,7 +105,16 @@ def gather_sources():
             sources.append((url, html_to_text(html)))
             print(f"OK fuente: {url}")
             for chart_id in dict.fromkeys(re.findall(r'datawrapper\.dwcdn\.net/([A-Za-z0-9]+)/', html)):
-                if len(images) >= MAX_IMAGES:
+                csv_url = f"https://datawrapper.dwcdn.net/{chart_id}/dataset.csv"
+                try:
+                    csv_text = fetch(csv_url)
+                    if csv_text.count("\n") >= 3 and "<html" not in csv_text[:200].lower():
+                        sources.append((csv_url, csv_text[:MAX_CHARS_PER_PAGE]))
+                        print(f"OK tabla-csv: {csv_url}")
+                        continue
+                except Exception:
+                    pass
+                if len(images) >= MAX_IMAGE_PARTS:
                     break
                 candidates = []
                 m = re.search(r'src="([^"]*datawrapper\.dwcdn\.net/' + chart_id + r'/[^"]*)"', html)
@@ -106,8 +123,10 @@ def gather_sources():
                 candidates.append(f"https://datawrapper.dwcdn.net/{chart_id}/full.png")
                 for img_url in candidates:
                     try:
-                        images.append(fetch_image_b64(img_url))
-                        print(f"OK tabla-imagen: {img_url}")
+                        parts = fetch_image_parts(img_url)
+                        for b64 in parts[:MAX_IMAGE_PARTS - len(images)]:
+                            images.append((b64, "image/png"))
+                        print(f"OK tabla-imagen: {img_url} ({len(parts)} franjas)")
                         break
                     except Exception as e:
                         print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
@@ -144,7 +163,8 @@ def call_claude(sources, images):
     )
     if images:
         user += ("\n\nSe adjuntan ademas las tablas (imagenes) de las mismas fuentes con el "
-                 "detalle completo; si la tabla y el texto difieren, manda la tabla.")
+                 "detalle completo; si la tabla y el texto difieren, manda la tabla. Una tabla "
+                 "larga puede venir cortada en varias imagenes consecutivas: leelas como una sola.")
     content = [{"type": "text", "text": user}] + [
         {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}}
         for b64, mt in images
