@@ -6,6 +6,7 @@
 <title>BencinApp — Encuentra la bencina más barata en Santiago</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 :root {
   --bg: #0f1117;
@@ -24,7 +25,6 @@
   --radius: 10px;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
 body {
@@ -124,9 +124,6 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   cursor: pointer;
 }
-.marker-copec { background: var(--copec); }
-.marker-shell { background: var(--shell); color: #333; }
-.marker-aramco { background: var(--aramco); }
 .marker-best {
   border-color: var(--success) !important;
   box-shadow: 0 0 0 3px rgba(34,197,94,0.3), 0 2px 8px rgba(0,0,0,0.4) !important;
@@ -503,6 +500,13 @@ async function loadDiscounts() {
 
 const DAYS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
+const BRAND_COLORS = { 'Copec': 'var(--copec)', 'Shell': 'var(--shell)', 'Aramco': 'var(--aramco)' };
+const BRAND_DEFAULT = '#6b7280'; // gris para marcas sin color asignado
+
+function brandColor(brand) {
+  return BRAND_COLORS[brand] || BRAND_DEFAULT;
+}
+
 // Sample stations — replace with CNE API data via GitHub Actions
 const SAMPLE_STATIONS = [
   {id:"s1",name:"Copec Av. Apoquindo",brand:"Copec",address:"Av. Apoquindo 6000, Las Condes",lat:-33.4130,lng:-70.5780,prices:{93:1428,95:1510,97:1552,diesel:1095}},
@@ -548,7 +552,7 @@ let state = {
   ranked: [],
 };
 
-let map, userMarker, markers = [], popupOpen = false;
+let map, userMarker, markers = [];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  INIT
@@ -636,9 +640,8 @@ function renderMarkers() {
 
   state.ranked.forEach((r, i) => {
     const s = r.station;
-    const brandClass = `marker-${escapeHtml(s.brand.toLowerCase())}`;
     const isBest = s.id === bestId;
-    const html = `<div class="station-marker ${brandClass} ${isBest ? 'marker-best' : ''}">${i+1}</div>`;
+    const html = `<div class="station-marker ${isBest ? 'marker-best' : ''}" style="background:${brandColor(s.brand)};${s.brand === 'Shell' ? 'color:#333;' : ''}">${i+1}</div>`;
 
     const marker = L.marker([s.lat, s.lng], {
       icon: L.divIcon({ className:'', html, iconSize:[32,32], iconAnchor:[16,16] })
@@ -863,7 +866,7 @@ function renderResults() {
 
   list.innerHTML = state.ranked.map((r, i) => {
     const s = r.station;
-    const brandColor = s.brand === 'Copec' ? 'var(--copec)' : s.brand === 'Shell' ? 'var(--shell)' : 'var(--aramco)';
+    const dotColor = brandColor(s.brand);
     const saving = Math.round(r.totalCost - bestTotal);
     const isBest = i === 0;
     const discountText = r.bestDiscount ? `-$${r.bestDiscount.discount}/L ${escapeHtml(r.bestDiscount.card)}` : '';
@@ -871,7 +874,7 @@ function renderResults() {
     return `
       <div class="result-card ${isBest ? 'best' : ''}" data-idx="${i}">
         <span class="result-rank">${i+1}</span>
-        <span class="result-brand-dot" style="background:${brandColor}"></span>
+        <span class="result-brand-dot" style="background:${dotColor}"></span>
         <div class="result-info">
           <div class="result-name">${escapeHtml(s.brand)} · ${escapeHtml(s.name.replace(s.brand+' ',''))}</div>
           <div class="result-meta">
