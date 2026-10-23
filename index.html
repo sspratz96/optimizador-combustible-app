@@ -393,6 +393,15 @@ body {
   white-space: nowrap;
 }
 .today-deals strong { font-weight: 600; }
+.data-status {
+  padding: 6px 16px;
+  font-size: 12px;
+  flex-shrink: 0;
+  display: none;
+  border-bottom: 1px solid var(--border);
+}
+.data-status.warn { display: block; background: rgba(245,158,11,0.12); color: var(--warn); font-weight: 600; }
+.data-status.ok { display: block; background: var(--surface); color: var(--text2); }
 </style>
 </head>
 <body>
@@ -411,6 +420,9 @@ body {
     <button class="btn-config" id="btnConfig" title="Configuración">⚙</button>
   </div>
 </div>
+
+<!-- Data status bar -->
+<div class="data-status" id="dataStatus"></div>
 
 <!-- Today's deals bar -->
 <div class="today-deals" id="todayDeals"></div>
@@ -545,7 +557,9 @@ async function init() {
   showDayInfo();
   await getLocation();
   initMap();
-  state.stations = await loadStations();
+  const loaded = await loadStations();
+  state.stations = loaded.stations;
+  showDataStatus(loaded);
   await recalculate();
   document.getElementById('loading').style.display = 'none';
 }
@@ -648,12 +662,46 @@ function renderMarkers() {
 //  LOAD STATIONS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+const STALE_HOURS = 24; // el pipeline corre cada 6 h; >24 h = 4 runs perdidos
+
 async function loadStations() {
   try {
     const resp = await fetch('data/stations.json');
-    if (resp.ok) return await resp.json();
+    if (resp.ok) {
+      const stations = await resp.json();
+      if (Array.isArray(stations) && stations.length > 0) {
+        let updatedAt = null;
+        try {
+          const meta = await (await fetch('data/meta.json')).json();
+          if (meta && meta.updatedAt) updatedAt = new Date(meta.updatedAt);
+        } catch(e) { /* sin meta: antigüedad desconocida */ }
+        return { stations, source: 'live', updatedAt };
+      }
+    }
   } catch(e) { /* fall through */ }
-  return SAMPLE_STATIONS;
+  return { stations: SAMPLE_STATIONS, source: 'sample', updatedAt: null };
+}
+
+function showDataStatus({ source, updatedAt }) {
+  const el = document.getElementById('dataStatus');
+  if (source === 'sample') {
+    el.className = 'data-status warn';
+    el.textContent = '⚠ Mostrando datos de EJEMPLO — los precios no son reales';
+    return;
+  }
+  if (!updatedAt || isNaN(updatedAt.getTime())) {
+    el.className = 'data-status ok';
+    el.textContent = 'Precios: CNE (fuente oficial)';
+    return;
+  }
+  const hours = (Date.now() - updatedAt.getTime()) / 3600000;
+  if (hours > STALE_HOURS) {
+    el.className = 'data-status warn';
+    el.textContent = `⚠ Precios desactualizados — última actualización hace ${Math.round(hours)} h`;
+  } else {
+    el.className = 'data-status ok';
+    el.textContent = `Precios CNE · actualizados hace ${hours < 1 ? 'menos de 1 h' : Math.round(hours) + ' h'}`;
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

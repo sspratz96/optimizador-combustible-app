@@ -57,6 +57,7 @@ jobs:
           python3 << 'PYEOF'
           import json
           import os
+          from datetime import datetime, timezone
 
           with open('raw_stations.json') as f:
               raw = json.load(f)
@@ -112,6 +113,11 @@ jobs:
           os.makedirs('data', exist_ok=True)
           with open('data/stations.json', 'w') as f:
               json.dump(stations, f, ensure_ascii=False)
+          with open('data/meta.json', 'w') as f:
+              json.dump({
+                  'updatedAt': datetime.now(timezone.utc).isoformat(),
+                  'count': len(stations),
+              }, f)
 
           print(f"✅ {len(stations)} estaciones RM procesadas")
           PYEOF
@@ -120,6 +126,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/stations.json
+          git add data/
           git diff --cached --quiet || git commit -m "🔄 Precios $(date -u +'%Y-%m-%d %H:%M UTC')"
           git push
