@@ -149,7 +149,9 @@ def call_claude(sources, images):
         "\"brand\": str (solo Copec, Shell o Aramco; descarta otras marcas), "
         "\"fuel\": str o null (SOLO si el descuento aplica a un unico combustible: "
         "'93'|'95'|'97'|'diesel'; null si aplica a todos), "
-        "\"discountPerLiter\": int (pesos por litro; si es un rango, usa el maximo), "
+        "\"discountPerLiter\": int (pesos por litro; si es un rango, usa el maximo; si el "
+        "descuento esta expresado en PORCENTAJE, OMITE la entrada completa — nunca lo "
+        "conviertas a pesos), "
         "\"days\": array de int (0=domingo ... 6=sabado), "
         "\"app\": str (app o medio para activar el descuento), "
         "\"maxMonthly\": int o null (tope mensual en pesos si se indica), "
@@ -157,9 +159,10 @@ def call_claude(sources, images):
         "Las fuentes incluyen texto de articulos y una o mas IMAGENES con tablas. "
         "La tabla-imagen es la fuente PRINCIPAL y contiene mas descuentos que el texto: "
         "extrae TODAS las filas de la tabla, una por una, ademas de lo que aporte el texto. "
-        "Incluye solo descuentos vigentes del mes indicado. Si una tarjeta aplica a "
-        "varias marcas, crea una entrada por marca. No inventes montos: usa solo valores "
-        "presentes en el texto o en las tablas adjuntas."
+        "Incluye solo descuentos vigentes del mes indicado. OMITE beneficios de una sola "
+        "vez o no recurrentes (primera compra, nuevos usuarios, cumpleanos, referidos). "
+        "Si una tarjeta aplica a varias marcas, crea una entrada por marca. No inventes "
+        "montos: usa solo valores presentes en el texto o en las tablas adjuntas."
     )
     today = date.today()
     user = f"Mes actual: {today.strftime('%Y-%m')}. Fuentes:\n\n" + "\n\n".join(
