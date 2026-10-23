@@ -4,10 +4,11 @@
   "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/, https://chocale.cl/2026/09/fiestas-patrias-2026-que-descuentos-en-bencinas-puedo-aprovechar/",
   "discounts": [
     {
-      "id": "app-aramco-estaciones-nuevos-usuarios-aramco-todos",
-      "card": "App Aramco Estaciones (Nuevos usuarios)",
+      "id": "app-aramco-estaciones-aramco-todos",
+      "card": "App Aramco Estaciones",
       "cardType": "socio",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         0,
@@ -20,13 +21,14 @@
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": null,
-      "notes": "Primera recarga; requiere indicar RUT antes de cargar"
+      "notes": "Nuevos usuarios primera recarga, requiere RUT"
     },
     {
-      "id": "app-copec-nuevos-usuarios-y-referidos-copec-todos",
-      "card": "App Copec (Nuevos usuarios y referidos)",
+      "id": "app-copec-copec-todos",
+      "card": "App Copec",
       "cardType": "socio",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         0,
@@ -39,13 +41,14 @@
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Primera transacción $50; cupones $50 al referir amigos"
+      "notes": "Nuevos usuarios primer compra, más $50 por referidos"
     },
     {
-      "id": "app-shell-cumpleanos-shell-todos",
-      "card": "App Shell (Cumpleaños)",
+      "id": "app-shell-shell-todos",
+      "card": "App Shell",
       "cardType": "socio",
       "brand": "Shell",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         0,
@@ -58,13 +61,14 @@
       ],
       "app": "App Shell",
       "maxMonthly": null,
-      "notes": "Hasta 7 días después del cumpleaños; tope 70 litros"
+      "notes": "Cumpleaños, hasta 7 días después, tope 70 litros"
     },
     {
       "id": "banco-bice-copec-dom",
       "card": "Banco BICE",
       "cardType": "credito",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         0
@@ -74,10 +78,39 @@
       "notes": "Tarjeta de crédito Limitless"
     },
     {
-      "id": "cabify-conductores-copec-todos",
-      "card": "Cabify (Conductores)",
+      "id": "banco-bice-shell-dom",
+      "card": "Banco BICE",
+      "cardType": "credito",
+      "brand": "Shell",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        0
+      ],
+      "app": "App Shell",
+      "maxMonthly": 5000,
+      "notes": "Tope una carga al mes"
+    },
+    {
+      "id": "banco-security-shell-dom",
+      "card": "Banco Security",
+      "cardType": "credito",
+      "brand": "Shell",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        0
+      ],
+      "app": "App Shell",
+      "maxMonthly": 5000,
+      "notes": "Tope una carga al mes"
+    },
+    {
+      "id": "cabify-copec-todos",
+      "card": "Cabify",
       "cardType": "socio",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 250,
       "days": [
         0,
@@ -90,13 +123,14 @@
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Platino $250; Oro $100; Plata $50; Bronce $15; límite 6 cargas mensuales excepto Bronce (15 cargas); Platino: 15 cargas adicionales $100 y 15 cargas $15"
+      "notes": "Conductores Platino $250, Oro $100, Plata $50, Bronce $15; límite 6 cargas mensuales excepto Bronce (15 cargas)"
     },
     {
       "id": "santander-consumer-copec-dom-vie-sab",
       "card": "Santander Consumer",
       "cardType": "credito",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         0,
@@ -108,49 +142,53 @@
       "notes": "Requiere ingresar código enviado por la empresa"
     },
     {
-      "id": "tarjeta-de-credito-del-banco-bice-shell-dom",
-      "card": "Tarjeta de crédito del Banco BICE",
-      "cardType": "credito",
-      "brand": "Shell",
-      "discountPerLiter": 100,
-      "days": [
-        0
-      ],
-      "app": "App Shell",
-      "maxMonthly": 5000,
-      "notes": "Solo para una carga mensual"
-    },
-    {
-      "id": "tarjeta-de-credito-del-banco-security-shell-dom",
-      "card": "Tarjeta de crédito del Banco Security",
-      "cardType": "credito",
-      "brand": "Shell",
-      "discountPerLiter": 100,
-      "days": [
-        0
-      ],
-      "app": "App Shell",
-      "maxMonthly": 5000,
-      "notes": "Para una carga al mes"
-    },
-    {
-      "id": "tarjeta-de-credito-spin-cruz-verde-aramco-dom",
-      "card": "Tarjeta de crédito SPIN (Cruz Verde)",
+      "id": "spin-aramco-dom",
+      "card": "SPIN",
       "cardType": "credito",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 150,
       "days": [
         0
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 10000,
-      "notes": "Formato cashback"
+      "notes": "Tarjeta Spin Visa Cruz Verde, cashback"
+    },
+    {
+      "id": "banco-consorcio-aramco-lun",
+      "card": "Banco Consorcio",
+      "cardType": "credito",
+      "brand": "Aramco",
+      "fuel": null,
+      "discountPerLiter": 150,
+      "days": [
+        1
+      ],
+      "app": "App Aramco Estaciones",
+      "maxMonthly": 10000,
+      "notes": "Cashback"
+    },
+    {
+      "id": "cencosud-scotiabank-copec-lun",
+      "card": "Cencosud Scotiabank",
+      "cardType": "credito",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        1
+      ],
+      "app": "App Copec",
+      "maxMonthly": 10000,
+      "notes": ""
     },
     {
       "id": "jumbo-prime-copec-lun",
       "card": "Jumbo Prime",
       "cardType": "credito",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         1
@@ -164,6 +202,7 @@
       "card": "Mercado Pago",
       "cardType": "prepago",
       "brand": "Shell",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         1
@@ -173,179 +212,193 @@
       "notes": "Válido por una transacción al mes con tope de 80 litros de carga"
     },
     {
-      "id": "tarjeta-cencosud-scotiabank-mastercard-copec-lun",
-      "card": "Tarjeta Cencosud Scotiabank Mastercard",
+      "id": "banco-internacional-copec-mar",
+      "card": "Banco Internacional",
       "cardType": "credito",
       "brand": "Copec",
-      "discountPerLiter": 100,
-      "days": [
-        1
-      ],
-      "app": "App Copec",
-      "maxMonthly": 10000,
-      "notes": ""
-    },
-    {
-      "id": "tarjeta-de-credito-banco-consorcio-aramco-lun",
-      "card": "Tarjeta de crédito Banco Consorcio",
-      "cardType": "credito",
-      "brand": "Aramco",
-      "discountPerLiter": 150,
-      "days": [
-        1
-      ],
-      "app": "App Aramco Estaciones",
-      "maxMonthly": 10000,
-      "notes": ""
-    },
-    {
-      "id": "rutpay-de-banceoestado-copec-mar",
-      "card": "Rutpay de BanceoEstado",
-      "cardType": "debito",
-      "brand": "Copec",
-      "discountPerLiter": 100,
-      "days": [
-        2
-      ],
-      "app": "Copec",
-      "maxMonthly": null,
-      "notes": ""
-    },
-    {
-      "id": "tarjeta-de-credito-itau-legend-copec-mar",
-      "card": "Tarjeta de crédito Itaú Legend",
-      "cardType": "credito",
-      "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         2
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Se debe obtener código en sitio Itaú Beneficios e ingresarlo a la app"
+      "notes": "Tarjetas Mastercard Clásica, Gold y Black"
     },
     {
-      "id": "tarjeta-de-credito-lider-bci-shell-mar",
-      "card": "Tarjeta de crédito Lider Bci",
+      "id": "bancoestado-copec-mar",
+      "card": "BancoEstado",
+      "cardType": "socio",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        2
+      ],
+      "app": "Rutpay",
+      "maxMonthly": null,
+      "notes": "Rutpay BancoEstado"
+    },
+    {
+      "id": "itau-copec-mar",
+      "card": "Itaú",
+      "cardType": "credito",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        2
+      ],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Tarjeta Legend, requiere código de sitio Itaú Beneficios"
+    },
+    {
+      "id": "lider-bci-shell-mar",
+      "card": "Lider Bci",
       "cardType": "credito",
       "brand": "Shell",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         2
       ],
       "app": "App Shell",
       "maxMonthly": 4000,
-      "notes": "Límite de $4.000 por carga, un uso diario y máximo dos al mes"
+      "notes": "Máximo dos usos al mes, límite $4.000 por carga"
     },
     {
-      "id": "tarjeta-de-prepago-mercado-pago-aramco-mar",
-      "card": "Tarjeta de Prepago Mercado Pago",
+      "id": "mercado-pago-aramco-mar",
+      "card": "Mercado Pago",
       "cardType": "prepago",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         2
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 5000,
-      "notes": ""
+      "notes": "Cashback"
     },
     {
-      "id": "tarjetas-de-credito-banco-internacional-copec-mar",
-      "card": "Tarjetas de crédito Banco Internacional",
-      "cardType": "credito",
-      "brand": "Copec",
-      "discountPerLiter": 100,
-      "days": [
-        2
-      ],
-      "app": "App Copec",
-      "maxMonthly": null,
-      "notes": ""
-    },
-    {
-      "id": "automovil-club-nuevos-socios-copec-mie",
-      "card": "Automóvil Club (nuevos socios)",
+      "id": "automovil-club-copec-mie",
+      "card": "Automóvil Club",
       "cardType": "socio",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         3
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Requiere cupón"
+      "notes": "Nuevos socios, requiere cupón"
     },
     {
-      "id": "tarjeta-de-credito-y-debito-del-banco-ripley-aramco-mie",
-      "card": "Tarjeta de crédito y débito del Banco Ripley",
+      "id": "banco-ripley-aramco-mie",
+      "card": "Banco Ripley",
       "cardType": "credito/debito",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 150,
       "days": [
         3
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 8000,
-      "notes": "Formato cashback"
+      "notes": "Cashback"
     },
     {
-      "id": "tarjetas-de-credito-visa-de-scotiabank-copec-mie",
-      "card": "Tarjetas de crédito Visa de Scotiabank",
+      "id": "scotiabank-copec-mie",
+      "card": "Scotiabank",
       "cardType": "credito",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 50,
       "days": [
         3
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Hasta el 31 de octubre"
+      "notes": "Tarjetas Visa, hasta 31 de octubre"
     },
     {
-      "id": "cualquier-tarjeta-solo-diesel-shell-jue",
-      "card": "Cualquier tarjeta (solo diésel)",
-      "cardType": "credito/debito/prepago",
-      "brand": "Shell",
-      "discountPerLiter": 50,
-      "days": [
-        4
-      ],
-      "app": "App Shell",
-      "maxMonthly": null,
-      "notes": "Día del Diésel; tope de 70 litros; requiere código DIESEL 50"
-    },
-    {
-      "id": "tarjeta-de-credito-abc-o-la-polar-aramco-jue",
-      "card": "Tarjeta de crédito Abc o La Polar",
+      "id": "abc-o-la-polar-aramco-jue",
+      "card": "Abc o La Polar",
       "cardType": "credito",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 150,
       "days": [
         4
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 10000,
-      "notes": "Formato cashback"
+      "notes": "Cashback, Tarjeta Abc Visa o La Polar"
     },
     {
-      "id": "tarjetas-de-credito-scotiabank-shell-jue",
-      "card": "Tarjetas de crédito Scotiabank",
+      "id": "bci-copec-jue",
+      "card": "Bci",
+      "cardType": "credito",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 70,
+      "days": [
+        4
+      ],
+      "app": "App Copec",
+      "maxMonthly": 7000,
+      "notes": "7% cashback, máximo $7.000 diarios por cliente"
+    },
+    {
+      "id": "cualquier-tarjeta-shell-jue",
+      "card": "Cualquier tarjeta",
+      "cardType": "credito/debito/prepago",
+      "brand": "Shell",
+      "fuel": "diesel",
+      "discountPerLiter": 50,
+      "days": [
+        4
+      ],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Día del Diésel, tope 70 litros, requiere código DIESEL 50"
+    },
+    {
+      "id": "scotiabank-shell-jue",
+      "card": "Scotiabank",
       "cardType": "credito",
       "brand": "Shell",
+      "fuel": null,
       "discountPerLiter": 200,
       "days": [
         4
       ],
       "app": "App Shell",
       "maxMonthly": null,
-      "notes": "Tope de 40 litros, una carga por día y dos al mes"
+      "notes": "Tarjetas Visa y Mastercard, tope 40 litros diarios y 2 cargas al mes"
+    },
+    {
+      "id": "coopeuch-copec-vie",
+      "card": "Coopeuch",
+      "cardType": "credito/debito",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 200,
+      "days": [
+        5
+      ],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": "Débito $100, crédito $200"
     },
     {
       "id": "dale-coopeuch-copec-vie",
       "card": "Dale Coopeuch",
       "cardType": "prepago",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         5
@@ -355,62 +408,67 @@
       "notes": "Formato cashback"
     },
     {
-      "id": "tarjeta-de-debito-y-credito-coopeuch-copec-vie",
-      "card": "Tarjeta de débito y crédito Coopeuch",
-      "cardType": "credito/debito",
-      "brand": "Copec",
-      "discountPerLiter": 200,
-      "days": [
-        5
-      ],
-      "app": "App Copec",
-      "maxMonthly": null,
-      "notes": "Crédito $200; débito $100"
-    },
-    {
-      "id": "tenpo-prepago-y-credito-aramco-vie",
-      "card": "Tenpo (prepago y crédito)",
+      "id": "tenpo-aramco-vie",
+      "card": "Tenpo",
       "cardType": "credito/prepago",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 300,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada; solo dos usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
     },
     {
-      "id": "tenpo-prepago-y-credito-copec-vie",
-      "card": "Tenpo (prepago y crédito)",
+      "id": "tenpo-copec-vie",
+      "card": "Tenpo",
       "cardType": "credito/prepago",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 300,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada; solo dos usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
     },
     {
-      "id": "tenpo-prepago-y-credito-shell-vie",
-      "card": "Tenpo (prepago y crédito)",
+      "id": "tenpo-shell-vie",
+      "card": "Tenpo",
       "cardType": "credito/prepago",
       "brand": "Shell",
+      "fuel": null,
       "discountPerLiter": 300,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada; solo dos usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
     },
     {
-      "id": "tarjeta-de-credito-machbank-copec-sab",
-      "card": "Tarjeta de crédito MACHBANK",
+      "id": "los-heroes-shell-sab",
+      "card": "Los Héroes",
+      "cardType": "prepago",
+      "brand": "Shell",
+      "fuel": null,
+      "discountPerLiter": 300,
+      "days": [
+        6
+      ],
+      "app": "App Héroes Prepago",
+      "maxMonthly": 5000,
+      "notes": "Requiere código PROMOOCT"
+    },
+    {
+      "id": "machbank-copec-sab",
+      "card": "MACHBANK",
       "cardType": "credito",
       "brand": "Copec",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         6
@@ -420,30 +478,18 @@
       "notes": ""
     },
     {
-      "id": "tarjeta-de-credito-sbpay-aramco-sab",
-      "card": "Tarjeta de crédito SBpay",
+      "id": "sbpay-aramco-sab",
+      "card": "SBpay",
       "cardType": "credito",
       "brand": "Aramco",
+      "fuel": null,
       "discountPerLiter": 150,
       "days": [
         6
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 10000,
-      "notes": "Quienes no usen app obtendrán $100 de devolución"
-    },
-    {
-      "id": "tarjeta-de-prepago-los-heroes-shell-sab",
-      "card": "Tarjeta de prepago Los Héroes",
-      "cardType": "prepago",
-      "brand": "Shell",
-      "discountPerLiter": 300,
-      "days": [
-        6
-      ],
-      "app": "App Shell",
-      "maxMonthly": 5000,
-      "notes": "Requiere ingresar código PROMOOCT en App Héroes Prepago"
+      "notes": "Cashback, quienes no usen app reciben $100 devolución"
     }
   ]
 }
