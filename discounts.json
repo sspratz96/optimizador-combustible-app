@@ -1,7 +1,7 @@
 {
   "lastUpdated": "2026-10-23",
   "validUntil": "2026-10-31",
-  "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/, https://chocale.cl/2026/09/fiestas-patrias-2026-que-descuentos-en-bencinas-puedo-aprovechar/",
+  "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/",
   "discounts": [
     {
       "id": "banco-bice-copec-dom",
@@ -208,6 +208,20 @@
       "notes": "Cashback"
     },
     {
+      "id": "rutpay-de-bancoestado-copec-mar",
+      "card": "Rutpay de BancoEstado",
+      "cardType": "debito",
+      "brand": "Copec",
+      "fuel": null,
+      "discountPerLiter": 100,
+      "days": [
+        2
+      ],
+      "app": "App Copec",
+      "maxMonthly": null,
+      "notes": ""
+    },
+    {
       "id": "automovil-club-copec-mie",
       "card": "Automóvil Club",
       "cardType": "socio",
@@ -278,9 +292,9 @@
       "notes": "Tarjetas Visa y Mastercard, tope 40 litros diarios y 2 cargas al mes"
     },
     {
-      "id": "shell-shell-jue",
+      "id": "shell-shell-diesel-jue",
       "card": "Shell",
-      "cardType": "socio",
+      "cardType": "credito",
       "brand": "Shell",
       "fuel": "diesel",
       "discountPerLiter": 50,
@@ -289,7 +303,7 @@
       ],
       "app": "App Shell",
       "maxMonthly": null,
-      "notes": "Día del Diésel, requiere código DIESEL 50, tope de 70 litros"
+      "notes": "Día del Diésel, tope de 70 litros, requiere código DIESEL 50"
     },
     {
       "id": "coopeuch-copec-vie",
@@ -322,42 +336,42 @@
     {
       "id": "tenpo-aramco-vie",
       "card": "Tenpo",
-      "cardType": "prepago/credito",
+      "cardType": "credito/prepago",
       "brand": "Aramco",
       "fuel": null,
-      "discountPerLiter": 50,
+      "discountPerLiter": 300,
       "days": [
         5
       ],
-      "app": "Apps Shell, Copec y Aramco",
+      "app": "App Aramco Estaciones",
       "maxMonthly": 4000,
       "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
     {
       "id": "tenpo-copec-vie",
       "card": "Tenpo",
-      "cardType": "prepago/credito",
+      "cardType": "credito/prepago",
       "brand": "Copec",
       "fuel": null,
-      "discountPerLiter": 50,
+      "discountPerLiter": 300,
       "days": [
         5
       ],
-      "app": "Apps Shell, Copec y Aramco",
+      "app": "App Copec",
       "maxMonthly": 4000,
       "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
     {
       "id": "tenpo-shell-vie",
       "card": "Tenpo",
-      "cardType": "prepago/credito",
+      "cardType": "credito/prepago",
       "brand": "Shell",
       "fuel": null,
-      "discountPerLiter": 50,
+      "discountPerLiter": 300,
       "days": [
         5
       ],
-      "app": "Apps Shell, Copec y Aramco",
+      "app": "App Shell",
       "maxMonthly": 4000,
       "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
