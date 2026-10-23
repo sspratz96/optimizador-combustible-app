@@ -131,9 +131,12 @@ def call_claude(sources, images):
         "\"app\": str (app o medio para activar el descuento), "
         "\"maxMonthly\": int o null (tope mensual en pesos si se indica), "
         "\"notes\": str (condiciones relevantes en una linea, o \"\")}. "
+        "Las fuentes incluyen texto de articulos y una o mas IMAGENES con tablas. "
+        "La tabla-imagen es la fuente PRINCIPAL y contiene mas descuentos que el texto: "
+        "extrae TODAS las filas de la tabla, una por una, ademas de lo que aporte el texto. "
         "Incluye solo descuentos vigentes del mes indicado. Si una tarjeta aplica a "
-        "varias marcas, crea una entrada por marca. No inventes montos: si un dato "
-        "no esta en el texto, omite la entrada."
+        "varias marcas, crea una entrada por marca. No inventes montos: usa solo valores "
+        "presentes en el texto o en las tablas adjuntas."
     )
     today = date.today()
     user = f"Mes actual: {today.strftime('%Y-%m')}. Fuentes:\n\n" + "\n\n".join(
@@ -264,6 +267,7 @@ def diff_summary(old, new):
 def main():
     sources, images = gather_sources()
     raw = call_claude(sources, images)
+    print(f"Entradas extraidas por el modelo: {len(raw)}")
     discounts = validate(raw)
     new_doc = build_doc(discounts, [u for u, _ in sources])
 
