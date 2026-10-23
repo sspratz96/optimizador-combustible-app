@@ -1,0 +1,41 @@
+name: Actualizar descuentos bancarios
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extraer descuentos con LLM
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 scripts/extract_discounts.py
+
+      - name: Crear PR si hay cambios
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet discounts.json; then
+            echo "Sin cambios en discounts.json"
+            exit 0
+          fi
+          BRANCH="bot/descuentos-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add discounts.json
+          git commit -m "🏷 Descuentos $(date -u +%Y-%m-%d) (extraccion automatica)"
+          git push -f origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Actualizacion de descuentos $(date -u +%Y-%m-%d)" \
+            --body-file pr_body.md \
+            || echo "Ya existe un PR para esta rama; commit actualizado con push -f"
