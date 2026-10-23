@@ -609,7 +609,7 @@ function renderMarkers() {
 
   state.ranked.forEach((r, i) => {
     const s = r.station;
-    const brandClass = `marker-${s.brand.toLowerCase()}`;
+    const brandClass = `marker-${escapeHtml(s.brand.toLowerCase())}`;
     const isBest = s.id === bestId;
     const html = `<div class="station-marker ${brandClass} ${isBest ? 'marker-best' : ''}">${i+1}</div>`;
 
@@ -619,12 +619,12 @@ function renderMarkers() {
 
     marker.on('click', () => {
       const discountInfo = r.bestDiscount
-        ? `<div class="discount-tag">-$${r.bestDiscount.discount}/L · ${r.bestDiscount.card}</div>`
+        ? `<div class="discount-tag">-$${r.bestDiscount.discount}/L · ${escapeHtml(r.bestDiscount.card)}</div>`
         : '';
       marker.bindPopup(`
         <div class="popup-inner">
-          <div class="brand">${s.brand} — ${s.name.replace(s.brand+' ','')}</div>
-          <div class="address">${s.address}</div>
+          <div class="brand">${escapeHtml(s.brand)} — ${escapeHtml(s.name.replace(s.brand+' ',''))}</div>
+          <div class="address">${escapeHtml(s.address)}</div>
           <div style="margin:6px 0">${discountInfo}</div>
           <div class="price-row">
             <span style="color:var(--text2);font-size:12px;">Precio efectivo</span>
@@ -759,6 +759,11 @@ async function recalculate() {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function escapeHtml(v) {
+  return String(v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  RENDER RESULTS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -780,14 +785,14 @@ function renderResults() {
     const brandColor = s.brand === 'Copec' ? 'var(--copec)' : s.brand === 'Shell' ? 'var(--shell)' : 'var(--aramco)';
     const saving = Math.round(r.totalCost - bestTotal);
     const isBest = i === 0;
-    const discountText = r.bestDiscount ? `-$${r.bestDiscount.discount}/L ${r.bestDiscount.card}` : '';
+    const discountText = r.bestDiscount ? `-$${r.bestDiscount.discount}/L ${escapeHtml(r.bestDiscount.card)}` : '';
 
     return `
       <div class="result-card ${isBest ? 'best' : ''}" data-idx="${i}">
         <span class="result-rank">${i+1}</span>
         <span class="result-brand-dot" style="background:${brandColor}"></span>
         <div class="result-info">
-          <div class="result-name">${s.brand} · ${s.name.replace(s.brand+' ','')}</div>
+          <div class="result-name">${escapeHtml(s.brand)} · ${escapeHtml(s.name.replace(s.brand+' ',''))}</div>
           <div class="result-meta">
             <span>${r.distanceKm.toFixed(1)} km · ${r.durationMin} min</span>
           </div>
@@ -859,7 +864,7 @@ function renderCardsGrid() {
   const grid = document.getElementById('cardsGrid');
   grid.innerHTML = ALL_CARDS.map(card => {
     const active = state.myCards.includes(card) ? 'active' : '';
-    return `<button class="card-toggle ${active}" data-card="${card}">${card}</button>`;
+    return `<button class="card-toggle ${active}" data-card="${escapeHtml(card)}">${escapeHtml(card)}</button>`;
   }).join('');
   grid.querySelectorAll('.card-toggle').forEach(btn => {
     btn.addEventListener('click', () => btn.classList.toggle('active'));
