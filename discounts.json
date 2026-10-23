@@ -18,18 +18,18 @@
       "notes": "Tarjeta de crédito Limitless"
     },
     {
-      "id": "banco-bice-shell-dom",
+      "id": "banco-bice-shell-diesel-dom",
       "card": "Banco BICE",
       "cardType": "credito",
       "brand": "Shell",
-      "fuel": null,
+      "fuel": "diesel",
       "discountPerLiter": 100,
       "days": [
         0
       ],
       "app": "App Shell",
       "maxMonthly": 5000,
-      "notes": "Tope una carga al mes"
+      "notes": "Solo para una carga mensual con tope de $5.000 de ahorro"
     },
     {
       "id": "banco-security-shell-dom",
@@ -290,20 +290,6 @@
       "app": "App Shell",
       "maxMonthly": null,
       "notes": "Tarjetas Visa y Mastercard, tope 40 litros diarios y 2 cargas al mes"
-    },
-    {
-      "id": "shell-shell-diesel-jue",
-      "card": "Shell",
-      "cardType": "credito",
-      "brand": "Shell",
-      "fuel": "diesel",
-      "discountPerLiter": 50,
-      "days": [
-        4
-      ],
-      "app": "App Shell",
-      "maxMonthly": null,
-      "notes": "Día del Diésel, tope de 70 litros, requiere código DIESEL 50"
     },
     {
       "id": "coopeuch-copec-vie",
