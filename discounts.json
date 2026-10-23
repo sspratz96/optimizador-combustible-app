@@ -12,9 +12,9 @@
       "days": [
         0
       ],
-      "app": "",
+      "app": "Shell",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Domingo"
     },
     {
       "id": "banco-consorcio-aramco-lun",
@@ -25,9 +25,9 @@
       "days": [
         1
       ],
-      "app": "",
+      "app": "Aramco",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Lunes"
     },
     {
       "id": "cencosud-scotiabank-copec-lun",
@@ -38,9 +38,9 @@
       "days": [
         1
       ],
-      "app": "Copec",
+      "app": "App Copec",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Lunes"
     },
     {
       "id": "jumbo-prime-copec-lun",
@@ -51,9 +51,9 @@
       "days": [
         1
       ],
-      "app": "Copec",
+      "app": "App Copec",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Lunes"
     },
     {
       "id": "banco-internacional-copec-mar",
@@ -64,9 +64,9 @@
       "days": [
         2
       ],
-      "app": "Copec",
+      "app": "App Copec",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Martes"
     },
     {
       "id": "lider-bci-shell-mar",
@@ -77,9 +77,9 @@
       "days": [
         2
       ],
-      "app": "Shell",
+      "app": "App Shell",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Martes"
     },
     {
       "id": "ripley-aramco-mie",
@@ -90,9 +90,9 @@
       "days": [
         3
       ],
-      "app": "",
+      "app": "Aramco",
       "maxMonthly": null,
-      "notes": "Cashback"
+      "notes": "Miércoles, cashback"
     },
     {
       "id": "scotiabank-shell-jue",
@@ -103,9 +103,9 @@
       "days": [
         4
       ],
-      "app": "Shell",
+      "app": "App Shell",
       "maxMonthly": null,
-      "notes": "Monto varía según tarjeta"
+      "notes": "Jueves, monto depende de tarjeta"
     },
     {
       "id": "tenpo-aramco-vie",
@@ -116,9 +116,9 @@
       "days": [
         5
       ],
-      "app": "Aramco",
+      "app": "Billeteras digitales Aramco",
       "maxMonthly": null,
-      "notes": "Cashback"
+      "notes": "Viernes, cashback"
     },
     {
       "id": "tenpo-copec-vie",
@@ -129,9 +129,9 @@
       "days": [
         5
       ],
-      "app": "Copec",
+      "app": "Billeteras digitales Copec",
       "maxMonthly": null,
-      "notes": "Cashback"
+      "notes": "Viernes, cashback"
     },
     {
       "id": "tenpo-shell-vie",
@@ -142,9 +142,9 @@
       "days": [
         5
       ],
-      "app": "Shell",
+      "app": "Billeteras digitales Shell",
       "maxMonthly": null,
-      "notes": "Cashback"
+      "notes": "Viernes, cashback"
     },
     {
       "id": "los-heroes-shell-sab",
@@ -155,9 +155,9 @@
       "days": [
         6
       ],
-      "app": "Shell",
+      "app": "App Shell",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Descuento en App Shell los sábados"
     },
     {
       "id": "machbank-copec-sab",
@@ -168,9 +168,9 @@
       "days": [
         6
       ],
-      "app": "Copec",
+      "app": "App Copec",
       "maxMonthly": null,
-      "notes": ""
+      "notes": "Sábado"
     }
   ]
 }
