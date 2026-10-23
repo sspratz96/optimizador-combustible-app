@@ -4,66 +4,6 @@
   "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/, https://chocale.cl/2026/09/fiestas-patrias-2026-que-descuentos-en-bencinas-puedo-aprovechar/",
   "discounts": [
     {
-      "id": "app-aramco-estaciones-aramco-todos",
-      "card": "App Aramco Estaciones",
-      "cardType": "socio",
-      "brand": "Aramco",
-      "fuel": null,
-      "discountPerLiter": 50,
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "app": "App Aramco Estaciones",
-      "maxMonthly": null,
-      "notes": "Nuevos usuarios primera recarga, requiere RUT"
-    },
-    {
-      "id": "app-copec-copec-todos",
-      "card": "App Copec",
-      "cardType": "socio",
-      "brand": "Copec",
-      "fuel": null,
-      "discountPerLiter": 50,
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "app": "App Copec",
-      "maxMonthly": null,
-      "notes": "Nuevos usuarios primer compra, más $50 por referidos"
-    },
-    {
-      "id": "app-shell-shell-todos",
-      "card": "App Shell",
-      "cardType": "socio",
-      "brand": "Shell",
-      "fuel": null,
-      "discountPerLiter": 50,
-      "days": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "app": "App Shell",
-      "maxMonthly": null,
-      "notes": "Cumpleaños, hasta 7 días después, tope 70 litros"
-    },
-    {
       "id": "banco-bice-copec-dom",
       "card": "Banco BICE",
       "cardType": "credito",
@@ -142,8 +82,8 @@
       "notes": "Requiere ingresar código enviado por la empresa"
     },
     {
-      "id": "spin-aramco-dom",
-      "card": "SPIN",
+      "id": "spin-cruz-verde-aramco-dom",
+      "card": "SPIN (Cruz Verde)",
       "cardType": "credito",
       "brand": "Aramco",
       "fuel": null,
@@ -153,7 +93,7 @@
       ],
       "app": "App Aramco Estaciones",
       "maxMonthly": 10000,
-      "notes": "Tarjeta Spin Visa Cruz Verde, cashback"
+      "notes": "Visa, cashback, tope de $10.000 al mes"
     },
     {
       "id": "banco-consorcio-aramco-lun",
@@ -226,22 +166,8 @@
       "notes": "Tarjetas Mastercard Clásica, Gold y Black"
     },
     {
-      "id": "bancoestado-copec-mar",
-      "card": "BancoEstado",
-      "cardType": "socio",
-      "brand": "Copec",
-      "fuel": null,
-      "discountPerLiter": 100,
-      "days": [
-        2
-      ],
-      "app": "Rutpay",
-      "maxMonthly": null,
-      "notes": "Rutpay BancoEstado"
-    },
-    {
-      "id": "itau-copec-mar",
-      "card": "Itaú",
+      "id": "itau-legend-copec-mar",
+      "card": "Itaú Legend",
       "cardType": "credito",
       "brand": "Copec",
       "fuel": null,
@@ -251,7 +177,7 @@
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Tarjeta Legend, requiere código de sitio Itaú Beneficios"
+      "notes": "Debe obtener código en sitio Itaú Beneficios"
     },
     {
       "id": "lider-bci-shell-mar",
@@ -310,8 +236,8 @@
       "notes": "Cashback"
     },
     {
-      "id": "scotiabank-copec-mie",
-      "card": "Scotiabank",
+      "id": "visa-scotiabank-copec-mie",
+      "card": "Visa Scotiabank",
       "cardType": "credito",
       "brand": "Copec",
       "fuel": null,
@@ -321,7 +247,7 @@
       ],
       "app": "App Copec",
       "maxMonthly": null,
-      "notes": "Tarjetas Visa, hasta 31 de octubre"
+      "notes": "Hasta el 31 de octubre, desde $50"
     },
     {
       "id": "abc-o-la-polar-aramco-jue",
@@ -338,34 +264,6 @@
       "notes": "Cashback, Tarjeta Abc Visa o La Polar"
     },
     {
-      "id": "bci-copec-jue",
-      "card": "Bci",
-      "cardType": "credito",
-      "brand": "Copec",
-      "fuel": null,
-      "discountPerLiter": 70,
-      "days": [
-        4
-      ],
-      "app": "App Copec",
-      "maxMonthly": 7000,
-      "notes": "7% cashback, máximo $7.000 diarios por cliente"
-    },
-    {
-      "id": "cualquier-tarjeta-shell-jue",
-      "card": "Cualquier tarjeta",
-      "cardType": "credito/debito/prepago",
-      "brand": "Shell",
-      "fuel": "diesel",
-      "discountPerLiter": 50,
-      "days": [
-        4
-      ],
-      "app": "App Shell",
-      "maxMonthly": null,
-      "notes": "Día del Diésel, tope 70 litros, requiere código DIESEL 50"
-    },
-    {
       "id": "scotiabank-shell-jue",
       "card": "Scotiabank",
       "cardType": "credito",
@@ -378,6 +276,20 @@
       "app": "App Shell",
       "maxMonthly": null,
       "notes": "Tarjetas Visa y Mastercard, tope 40 litros diarios y 2 cargas al mes"
+    },
+    {
+      "id": "shell-shell-jue",
+      "card": "Shell",
+      "cardType": "socio",
+      "brand": "Shell",
+      "fuel": "diesel",
+      "discountPerLiter": 50,
+      "days": [
+        4
+      ],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Día del Diésel, requiere código DIESEL 50, tope de 70 litros"
     },
     {
       "id": "coopeuch-copec-vie",
@@ -410,44 +322,44 @@
     {
       "id": "tenpo-aramco-vie",
       "card": "Tenpo",
-      "cardType": "credito/prepago",
+      "cardType": "prepago/credito",
       "brand": "Aramco",
       "fuel": null,
-      "discountPerLiter": 300,
+      "discountPerLiter": 50,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
     {
       "id": "tenpo-copec-vie",
       "card": "Tenpo",
-      "cardType": "credito/prepago",
+      "cardType": "prepago/credito",
       "brand": "Copec",
       "fuel": null,
-      "discountPerLiter": 300,
+      "discountPerLiter": 50,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
     {
       "id": "tenpo-shell-vie",
       "card": "Tenpo",
-      "cardType": "credito/prepago",
+      "cardType": "prepago/credito",
       "brand": "Shell",
       "fuel": null,
-      "discountPerLiter": 300,
+      "discountPerLiter": 50,
       "days": [
         5
       ],
       "app": "Apps Shell, Copec y Aramco",
       "maxMonthly": 4000,
-      "notes": "Entre $50 y $300 según campaña personalizada, tope 2 usos al mes"
+      "notes": "Entre $50 y $300 según campaña personalizada, tope de $4.000 por carga y solo dos usos al mes"
     },
     {
       "id": "los-heroes-shell-sab",
