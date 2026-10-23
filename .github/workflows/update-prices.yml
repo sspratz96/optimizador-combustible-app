@@ -16,11 +16,29 @@ jobs:
 
       - name: Login y obtener token
         run: |
-          TOKEN=$(curl -s -X POST "https://api.cne.cl/api/login" \
+          CODE=$(curl -s -o resp.json -w '%{http_code}' -X POST "https://api.cne.cl/api/login" \
             --data-urlencode "email=${{ secrets.CNE_EMAIL }}" \
-            --data-urlencode "password=${{ secrets.CNE_PASSWORD }}" \
-            | python3 -c "import json,sys; print(json.load(sys.stdin)['token'])")
-          echo "CNE_TOKEN=$TOKEN" >> $GITHUB_ENV
+            --data-urlencode "password=${{ secrets.CNE_PASSWORD }}")
+          echo "HTTP $CODE"
+          python3 << 'PYEOF'
+          import json
+          try:
+              d = json.load(open('resp.json'))
+          except Exception as e:
+              print('Respuesta no es JSON:', e)
+              print(open('resp.json').read()[:300])
+              raise SystemExit(1)
+          if isinstance(d, dict):
+              print('Claves nivel 1:', sorted(d.keys()))
+              for k in ('message', 'error', 'errors', 'detail', 'status'):
+                  if k in d:
+                      print(f'{k}:', d[k])
+              for k, v in d.items():
+                  if isinstance(v, dict):
+                      print(f'Claves dentro de "{k}":', sorted(v.keys()))
+          else:
+              print('Tipo de respuesta:', type(d).__name__, '— largo:', len(d))
+          PYEOF
 
       - name: Descargar estaciones
         run: |
