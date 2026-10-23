@@ -1,11 +1,21 @@
-
 #!/usr/bin/env python3
-"""Extrae descuentos de bencina (Chile) desde fuentes publicas con Claude
-y actualiza discounts.json si hay cambios. Pensado para GitHub Actions.
+"""Extrae descuentos de bencina (Chile) desde Chocale con Claude y actualiza
+discounts.json si hay cambios materiales. Pensado para GitHub Actions.
+
+Version consolidada. Incluye:
+- Solo articulos del mes corriente (fallback: el mas reciente) para evitar
+  contaminacion de meses anteriores.
+- Tablas Datawrapper: intenta el CSV de datos; si no, rebana la imagen en
+  franjas legibles (requiere Pillow) y las pasa como vision.
+- Prompt con: nombres cortos canonicos (anclados al JSON vigente), maximo de
+  rangos, omision de porcentajes y de beneficios de una sola vez, campo fuel.
+- temperature=0 para minimizar variacion entre corridas.
+- Anti-ruido: si lo material no cambio, conserva la redaccion anterior;
+  corridas sin cambios reales no escriben nada.
 
 Salida:
-  - exit 0 sin tocar archivos  -> sin cambios
-  - exit 0 con discounts.json y pr_body.md reescritos -> hay cambios (el workflow abre PR)
+  - exit 0 sin tocar archivos -> sin cambios
+  - exit 0 con discounts.json y pr_body.md reescritos -> hay cambios
   - exit 1 -> error o extraccion sospechosa; NO toca discounts.json
 """
 import base64
@@ -21,11 +31,15 @@ from html.parser import HTMLParser
 
 CHOCALE_TAG_URL = "https://chocale.cl/temas/descuentos-bencinas/"
 MODEL = "claude-haiku-4-5-20251001"
-MAX_IMAGE_PARTS = 12  # franjas de imagen en total (una tabla alta se rebana)
+MAX_ARTICLES = 2
+MAX_IMAGE_PARTS = 12      # franjas de imagen en total (una tabla alta se rebana)
+STRIP_PX, OVERLAP_PX = 1300, 80
 VALID_BRANDS = {"Copec", "Shell", "Aramco"}
+VALID_FUELS = {"93", "95", "97", "diesel"}
 VALID_DAYS = set(range(7))
-MIN_ENTRIES = 8          # tipicamente hay ~15; menos que esto = extraccion degenerada
+MIN_ENTRIES = 8           # tipicamente hay 25-35; menos de 8 = extraccion degenerada
 MAX_ENTRIES = 60
+MATERIAL_FIELDS = ("card", "brand", "fuel", "discountPerLiter", "days", "maxMonthly")
 MAX_CHARS_PER_PAGE = 40000
 DAY_ABBR = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"]
 UA = "BencinApp-bot/1.0 (actualizacion mensual de descuentos; contacto en el repo)"
@@ -75,63 +89,71 @@ def fetch_image_parts(url):
     img = Image.open(io.BytesIO(data))
     img.load()
     w, h = img.size
-    strip, overlap = 1300, 80  # ~1300px por franja; traslape para no cortar filas
     parts, top = [], 0
     while top < h:
-        bottom = min(h, top + strip)
+        bottom = min(h, top + STRIP_PX)
         buf = io.BytesIO()
         img.crop((0, top, w, bottom)).convert("RGB").save(buf, format="PNG")
         parts.append(base64.b64encode(buf.getvalue()).decode())
         if bottom >= h:
             break
-        top = bottom - overlap
+        top = bottom - OVERLAP_PX  # traslape para no cortar filas
     return parts
 
 
+def pick_article_links(tag_html):
+    """Articulos de bencina: prioriza los del mes corriente; fallback, el mas reciente."""
+    links = list(dict.fromkeys(
+        re.findall(r'href="(https://chocale\.cl/\d{4}/\d{2}/[^"]*bencina[^"]*)"', tag_html)
+    ))
+    ym = date.today().strftime("/%Y/%m/")
+    current = [u for u in links if ym in u]
+    chosen = current[:MAX_ARTICLES] if current else links[:1]
+    if current:
+        print(f"Articulos del mes corriente: {len(current)}")
+    else:
+        print("AVISO: ningun articulo del mes corriente; usando el mas reciente")
+    return chosen
+
+
 def gather_sources():
-    """Hasta 2 articulos recientes de Chocale, con sus tablas-imagen (Datawrapper)."""
+    """Articulos elegidos de Chocale + sus tablas (CSV si existe; si no, imagen rebanada)."""
     sources, images = [], []
-    tag_html = fetch(CHOCALE_TAG_URL)
-    links = re.findall(r'href="(https://chocale\.cl/\d{4}/[^"]*bencina[^"]*)"', tag_html)
-    seen = []
-    for u in links:
-        if u not in seen:
-            seen.append(u)
-        if len(seen) == 2:
-            break
-    for url in seen:
+    chosen = pick_article_links(fetch(CHOCALE_TAG_URL))
+    for url in chosen:
         try:
             html = fetch(url)
             sources.append((url, html_to_text(html)))
             print(f"OK fuente: {url}")
-            for chart_id in dict.fromkeys(re.findall(r'datawrapper\.dwcdn\.net/([A-Za-z0-9]+)/', html)):
-                csv_url = f"https://datawrapper.dwcdn.net/{chart_id}/dataset.csv"
-                try:
-                    csv_text = fetch(csv_url)
-                    if csv_text.count("\n") >= 3 and "<html" not in csv_text[:200].lower():
-                        sources.append((csv_url, csv_text[:MAX_CHARS_PER_PAGE]))
-                        print(f"OK tabla-csv: {csv_url}")
-                        continue
-                except Exception:
-                    pass
-                if len(images) >= MAX_IMAGE_PARTS:
-                    break
-                candidates = []
-                m = re.search(r'src="([^"]*datawrapper\.dwcdn\.net/' + chart_id + r'/[^"]*)"', html)
-                if m:
-                    candidates.append(m.group(1).replace('&amp;', '&').replace('&#038;', '&'))
-                candidates.append(f"https://datawrapper.dwcdn.net/{chart_id}/full.png")
-                for img_url in candidates:
-                    try:
-                        parts = fetch_image_parts(img_url)
-                        for b64 in parts[:MAX_IMAGE_PARTS - len(images)]:
-                            images.append((b64, "image/png"))
-                        print(f"OK tabla-imagen: {img_url} ({len(parts)} franjas)")
-                        break
-                    except Exception as e:
-                        print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
         except Exception as e:
             print(f"AVISO: no se pudo leer {url}: {e}")
+            continue
+        for chart_id in dict.fromkeys(re.findall(r'datawrapper\.dwcdn\.net/([A-Za-z0-9]+)/', html)):
+            csv_url = f"https://datawrapper.dwcdn.net/{chart_id}/dataset.csv"
+            try:
+                csv_text = fetch(csv_url)
+                if csv_text.count("\n") >= 3 and "<html" not in csv_text[:200].lower():
+                    sources.append((csv_url, csv_text[:MAX_CHARS_PER_PAGE]))
+                    print(f"OK tabla-csv: {csv_url}")
+                    continue
+            except Exception:
+                pass
+            if len(images) >= MAX_IMAGE_PARTS:
+                break
+            candidates = []
+            m = re.search(r'src="([^"]*datawrapper\.dwcdn\.net/' + chart_id + r'/[^"]*)"', html)
+            if m:
+                candidates.append(m.group(1).replace('&amp;', '&').replace('&#038;', '&'))
+            candidates.append(f"https://datawrapper.dwcdn.net/{chart_id}/full.png")
+            for img_url in candidates:
+                try:
+                    parts = fetch_image_parts(img_url)
+                    for b64 in parts[:MAX_IMAGE_PARTS - len(images)]:
+                        images.append((b64, "image/png"))
+                    print(f"OK tabla-imagen: {img_url} ({len(parts)} franjas)")
+                    break
+                except Exception as e:
+                    print(f"AVISO: no se pudo leer la imagen {img_url}: {e}")
     if not sources:
         print("ERROR: ninguna fuente disponible")
         sys.exit(1)
@@ -156,9 +178,9 @@ def call_claude(sources, images, current):
         "\"app\": str (app o medio para activar el descuento), "
         "\"maxMonthly\": int o null (tope mensual en pesos si se indica), "
         "\"notes\": str (condiciones relevantes en una linea, o \"\")}. "
-        "Las fuentes incluyen texto de articulos y una o mas IMAGENES con tablas. "
-        "La tabla-imagen es la fuente PRINCIPAL y contiene mas descuentos que el texto: "
-        "extrae TODAS las filas de la tabla, una por una, ademas de lo que aporte el texto. "
+        "Las fuentes incluyen texto de articulos, datos CSV de tablas y/o IMAGENES con tablas. "
+        "La tabla (CSV o imagen) es la fuente PRINCIPAL y contiene mas descuentos que el texto: "
+        "extrae TODAS sus filas, una por una, ademas de lo que aporte el texto. "
         "Incluye solo descuentos vigentes del mes indicado. OMITE beneficios de una sola "
         "vez o no recurrentes (primera compra, nuevos usuarios, cumpleanos, referidos). "
         "Si una tarjeta aplica a varias marcas, crea una entrada por marca. No inventes "
@@ -216,7 +238,10 @@ def slug(s):
 def make_id(e):
     days = sorted(e["days"])
     d = "todos" if len(days) == 7 else "-".join(DAY_ABBR[x] for x in days)
-    return f"{slug(e['card'])}-{e['brand'].lower()}-{d}"
+    base = f"{slug(e['card'])}-{e['brand'].lower()}"
+    if e.get("fuel"):
+        base += f"-{e['fuel']}"
+    return f"{base}-{d}"
 
 
 def validate(raw):
@@ -233,14 +258,14 @@ def validate(raw):
             if not (50 <= disc <= 500) or not days or not set(days) <= VALID_DAYS:
                 print(f"DESCARTADA (fuera de rango): {e.get('card')}")
                 continue
+            fuel = e.get("fuel")
+            fuel = str(fuel).strip().lower() if fuel not in (None, "") else None
+            if fuel not in VALID_FUELS:
+                fuel = None
             mm = e.get("maxMonthly")
             mm = int(mm) if mm not in (None, "", 0) else None
             if mm is not None and not (1000 <= mm <= 100000):
                 mm = None
-            fuel = e.get("fuel")
-            fuel = str(fuel).strip().lower() if fuel not in (None, "") else None
-            if fuel not in (None, "93", "95", "97", "diesel"):
-                fuel = None
             entry = {
                 "card": str(e["card"]).strip(),
                 "cardType": str(e.get("cardType", "")).strip(),
@@ -279,6 +304,16 @@ def build_doc(discounts, source_urls):
     }
 
 
+def preserve_wording(old_doc, new_doc):
+    """Si lo material no cambio, conservar la redaccion anterior (evita PRs de ruido)."""
+    old_by_id = {e["id"]: e for e in old_doc.get("discounts", [])}
+    for e in new_doc["discounts"]:
+        prev = old_by_id.get(e["id"])
+        if prev and all(prev.get(k) == e.get(k) for k in MATERIAL_FIELDS):
+            for k in ("cardType", "app", "notes"):
+                e[k] = prev.get(k, e[k])
+
+
 def diff_summary(old, new):
     o = {e["id"]: e for e in old.get("discounts", [])}
     n = {e["id"]: e for e in new["discounts"]}
@@ -315,15 +350,7 @@ def main():
     print(f"Entradas extraidas por el modelo: {len(raw)}")
     discounts = validate(raw)
     new_doc = build_doc(discounts, [u for u, _ in sources])
-
-    # Si lo material no cambio, conservar la redaccion anterior (evita PRs de ruido)
-    material_fields = ("card", "brand", "fuel", "discountPerLiter", "days", "maxMonthly")
-    old_by_id = {e["id"]: e for e in old_doc.get("discounts", [])}
-    for e in new_doc["discounts"]:
-        prev = old_by_id.get(e["id"])
-        if prev and all(prev.get(k) == e.get(k) for k in material_fields):
-            for k in ("cardType", "app", "notes"):
-                e[k] = prev.get(k, e[k])
+    preserve_wording(old_doc, new_doc)
 
     same_data = old_doc.get("discounts") == new_doc["discounts"] \
         and old_doc.get("validUntil") == new_doc["validUntil"]
