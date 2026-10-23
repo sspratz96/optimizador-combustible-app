@@ -555,16 +555,26 @@ let map, userMarker, markers = [], popupOpen = false;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function init() {
-  setupUI();
-  await loadDiscounts();
-  showDayInfo();
-  await getLocation();
-  initMap();
-  const loaded = await loadStations();
-  state.stations = loaded.stations;
-  showDataStatus(loaded);
-  await recalculate();
-  document.getElementById('loading').style.display = 'none';
+  try {
+    setupUI();
+    await loadDiscounts();
+    showDayInfo();
+    await getLocation();
+    initMap();
+    const loaded = await loadStations();
+    state.stations = loaded.stations;
+    showDataStatus(loaded);
+    await recalculate();
+    document.getElementById('loading').style.display = 'none';
+  } catch (err) {
+    console.error('Error de inicialización:', err);
+    document.getElementById('loading').innerHTML = `
+      <p style="font-size:32px;">⚠️</p>
+      <p style="color:var(--text);font-weight:600;">La app no pudo iniciar</p>
+      <p style="color:var(--text2);font-size:14px;">Puede ser un problema de red o un servicio externo caído.</p>
+      <button onclick="location.reload()" style="padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);">Reintentar</button>
+    `;
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -779,6 +789,7 @@ function getDiscountsForStation(brand) {
 
 async function recalculate() {
   document.getElementById('loadingText').textContent = 'Calculando rutas…';
+  document.getElementById('resultCount').textContent = 'recalculando…';
 
   // Filtro por radio (haversine rápido) y top 20 más cercanas
   const sorted = state.stations
