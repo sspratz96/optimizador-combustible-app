@@ -399,6 +399,56 @@ body {
 }
 .data-status.warn { display: block; background: rgba(245,158,11,0.12); color: var(--warn); font-weight: 600; }
 .data-status.ok { display: block; background: var(--surface); color: var(--text2); }
+
+/* ─── DAYS STRIP (comparación entre días) ─── */
+.days-strip {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.day-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font);
+  min-width: 64px;
+}
+.day-chip .d-name { font-size: 11px; font-weight: 600; }
+.day-chip .d-total { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--text); }
+.day-chip .d-delta { font-size: 10px; font-weight: 600; }
+.day-chip .d-delta.pos { color: var(--warn); }
+.day-chip .d-delta.neg { color: var(--success); }
+.day-chip.active {
+  border-color: var(--accent);
+  background: rgba(59,130,246,0.1);
+  color: var(--text);
+}
+.day-chip.cheapest { border-color: var(--success); }
+.wait-callout {
+  margin: 0 12px 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.35);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.wait-callout strong { color: var(--success); }
+.wait-callout .note { color: var(--text2); font-size: 11px; display: block; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -432,6 +482,9 @@ body {
   <button class="fuel-tab" data-fuel="diesel">Diésel</button>
 </div>
 
+<!-- Days strip: comparación del mejor costo total por día -->
+<div class="days-strip" id="daysStrip"></div>
+
 <!-- Map -->
 <div class="map-wrap">
   <div id="map"></div>
@@ -442,6 +495,7 @@ body {
       <h2>Mejores opciones</h2>
       <span class="count" id="resultCount"></span>
     </div>
+    <div id="waitCallout"></div>
     <div class="results-list" id="resultsList">
       <div class="empty-state">Calculando las mejores opciones…</div>
     </div>
@@ -551,6 +605,8 @@ let state = {
   myCards: [],
   stations: [],
   ranked: [],
+  dayOffset: 0,        // 0 = hoy, 1 = mañana, … hasta 6
+  dayProjections: [],  // [{offset, day, best}] — mejor opción por día, precios de hoy
 };
 
 let map, userMarker, markers = [];
@@ -782,35 +838,35 @@ async function fetchRoutes(stations) {
 //  CALCULATE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function getDiscountsForStation(brand) {
-  const today = new Date().getDay();
+function dayFromOffset(offset) {
+  return (new Date().getDay() + offset) % 7;
+}
+
+function dateFromOffset(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function getDiscountsForStation(brand, day) {
   return DISCOUNTS.filter(d =>
     d.brand === brand &&
     (!d.fuel || d.fuel === state.fuel) &&
-    d.days.includes(today) &&
+    d.days.includes(day) &&
     state.myCards.includes(d.card)
   );
 }
 
-async function recalculate() {
-  document.getElementById('loadingText').textContent = 'Calculando rutas…';
-  document.getElementById('resultCount').textContent = 'recalculando…';
-
-  // Filtro por radio (haversine rápido) y top 20 más cercanas
-  const sorted = state.stations
-    .map(s => ({ station: s, hav: haversine(state.userLat, state.userLng, s.lat, s.lng) }))
-    .filter(x => x.hav <= state.radius)
-    .sort((a,b) => a.hav - b.hav)
-    .slice(0, 20);
-
-  const routes = await fetchRoutes(sorted.map(x => x.station));
-
+// Calcula el ranking completo para un día de la semana dado,
+// reutilizando rutas ya resueltas. Supuesto: precios de hoy constantes
+// (la CNE los actualiza semanalmente, la proyección es referencial).
+function computeResultsForDay(candidates, routes, day) {
   const results = [];
-  for (const { station: s } of sorted) {
+  for (const s of candidates) {
     const price = s.prices[state.fuel];
     if (!price) continue;
 
-    const discounts = getDiscountsForStation(s.brand);
+    const discounts = getDiscountsForStation(s.brand, day);
     const bestDiscount = discounts.length > 0
       ? discounts.reduce((a, b) => a.discount > b.discount ? a : b)
       : null;
@@ -837,12 +893,39 @@ async function recalculate() {
       totalCost,
     });
   }
-
   results.sort((a, b) => a.totalCost - b.totalCost);
-  state.ranked = results;
+  return results;
+}
+
+async function recalculate() {
+  document.getElementById('loadingText').textContent = 'Calculando rutas…';
+  document.getElementById('resultCount').textContent = 'recalculando…';
+
+  // Filtro por radio (haversine rápido) y top 20 más cercanas
+  const sorted = state.stations
+    .map(s => ({ station: s, hav: haversine(state.userLat, state.userLng, s.lat, s.lng) }))
+    .filter(x => x.hav <= state.radius)
+    .sort((a,b) => a.hav - b.hav)
+    .slice(0, 20);
+
+  const candidates = sorted.map(x => x.station);
+  const routes = await fetchRoutes(candidates);
+
+  // Proyección: mejor opción para hoy y los próximos 6 días
+  state.dayProjections = [];
+  for (let off = 0; off < 7; off++) {
+    const res = computeResultsForDay(candidates, routes, dayFromOffset(off));
+    state.dayProjections.push({ offset: off, day: dayFromOffset(off), best: res[0] || null });
+  }
+
+  // Ranking del día seleccionado (por defecto hoy)
+  state.ranked = computeResultsForDay(candidates, routes, dayFromOffset(state.dayOffset));
 
   renderMarkers();
   renderResults();
+  renderDaysStrip();
+  renderWaitCallout();
+  showDayInfo();
 }
 
 function escapeHtml(v) {
@@ -905,6 +988,87 @@ function renderResults() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  DAYS STRIP + CALLOUT (comparación entre días)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const DAYS_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+function discountsExpiredByOffset(offset) {
+  if (!discountsMeta.validUntil) return false;
+  return dateFromOffset(offset) > new Date(discountsMeta.validUntil + 'T23:59:59');
+}
+
+function renderDaysStrip() {
+  const strip = document.getElementById('daysStrip');
+  const valid = state.dayProjections.filter(p => p.best);
+  if (valid.length === 0) { strip.innerHTML = ''; return; }
+
+  const todayBest = state.dayProjections[0].best;
+  const cheapest = Math.min(...valid.map(p => p.best.totalCost));
+
+  strip.innerHTML = state.dayProjections.map(p => {
+    if (!p.best) return '';
+    const name = p.offset === 0 ? 'Hoy' : (p.offset === 1 ? 'Mañana' : DAYS_SHORT[p.day]);
+    const delta = todayBest ? Math.round(p.best.totalCost - todayBest.totalCost) : 0;
+    const deltaHtml = p.offset === 0 || delta === 0 ? ''
+      : `<span class="d-delta ${delta > 0 ? 'pos' : 'neg'}">${delta > 0 ? '+' : '−'}$${Math.abs(delta).toLocaleString('es-CL')}</span>`;
+    const isCheapest = Math.round(p.best.totalCost) === Math.round(cheapest);
+    const expired = discountsExpiredByOffset(p.offset) ? ' ⚠' : '';
+    return `
+      <button class="day-chip ${p.offset === state.dayOffset ? 'active' : ''} ${isCheapest ? 'cheapest' : ''}" data-offset="${p.offset}"
+        title="${expired ? 'Descuentos fuera de vigencia para esa fecha' : ''}">
+        <span class="d-name">${name}${expired}</span>
+        <span class="d-total">$${Math.round(p.best.totalCost).toLocaleString('es-CL')}</span>
+        ${deltaHtml}
+      </button>`;
+  }).join('');
+
+  strip.querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', async () => {
+      const off = parseInt(chip.dataset.offset);
+      if (off === state.dayOffset) return;
+      state.dayOffset = off;
+      await recalculate(); // rutas en caché → sin llamadas extra a OSRM
+    });
+  });
+}
+
+function renderWaitCallout() {
+  const el = document.getElementById('waitCallout');
+  const todayP = state.dayProjections[0];
+  if (!todayP || !todayP.best) { el.innerHTML = ''; return; }
+
+  // Mejor día futuro vs hoy
+  const future = state.dayProjections.slice(1).filter(p => p.best);
+  if (future.length === 0) { el.innerHTML = ''; return; }
+  const bestFuture = future.reduce((a, b) => a.best.totalCost < b.best.totalCost ? a : b);
+  const saving = Math.round(todayP.best.totalCost - bestFuture.best.totalCost);
+
+  if (saving <= 0) {
+    // Hoy es el mejor día (o empata): si no estamos viendo hoy, orientar de vuelta
+    el.innerHTML = state.dayOffset !== 0
+      ? `<div class="wait-callout">Hoy es el mejor día para cargar: <strong>$${Math.round(todayP.best.totalCost).toLocaleString('es-CL')}</strong> en ${escapeHtml(todayP.best.station.name)}.</div>`
+      : '';
+    return;
+  }
+
+  const b = bestFuture.best;
+  const dayName = DAYS_ES[bestFuture.day];
+  const expiredNote = discountsExpiredByOffset(bestFuture.offset)
+    ? ' · ⚠ los descuentos de ese día están fuera de vigencia declarada'
+    : '';
+  el.innerHTML = `
+    <div class="wait-callout">
+      💡 Si esperas <strong>${bestFuture.offset} día${bestFuture.offset > 1 ? 's' : ''}</strong> (${dayName}),
+      carga en <strong>${escapeHtml(b.station.name)}</strong>
+      ${b.bestDiscount ? `con ${escapeHtml(b.bestDiscount.card)} (−$${b.bestDiscount.discount}/L)` : ''}
+      y gastarías <strong>$${Math.round(b.totalCost).toLocaleString('es-CL')}</strong>
+      — ahorras $${saving.toLocaleString('es-CL')} vs hoy.
+      <span class="note">Proyección con los precios de hoy; la CNE los actualiza semanalmente${expiredNote}.</span>
+    </div>`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  UI
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -958,9 +1122,10 @@ function renderCardsGrid() {
 }
 
 function showDayInfo() {
-  const today = new Date().getDay();
-  const dayName = DAYS_ES[today];
-  document.getElementById('dayBadge').textContent = dayName;
+  const day = dayFromOffset(state.dayOffset);
+  const dayName = DAYS_ES[day];
+  const label = state.dayOffset === 0 ? dayName : `${dayName} (en ${state.dayOffset} día${state.dayOffset > 1 ? 's' : ''})`;
+  document.getElementById('dayBadge').textContent = label;
 
   const dealsBar = document.getElementById('todayDeals');
 
@@ -970,16 +1135,17 @@ function showDayInfo() {
   }
 
   let expiredNote = '';
-  if (discountsMeta.validUntil && new Date(discountsMeta.validUntil + 'T23:59:59') < new Date()) {
+  if (discountsExpiredByOffset(state.dayOffset)) {
     expiredNote = ` · <strong>⚠ válidos hasta ${escapeHtml(discountsMeta.validUntil)}, pueden haber cambiado</strong>`;
   }
 
-  const todayDiscounts = DISCOUNTS.filter(d => d.days.includes(today));
-  if (todayDiscounts.length === 0) {
-    dealsBar.innerHTML = `<strong>Hoy:</strong> Sin descuentos bancarios disponibles${expiredNote}`;
+  const prefix = state.dayOffset === 0 ? `Hoy ${dayName}` : dayName;
+  const dayDiscounts = DISCOUNTS.filter(d => d.days.includes(day));
+  if (dayDiscounts.length === 0) {
+    dealsBar.innerHTML = `<strong>${prefix}:</strong> Sin descuentos bancarios disponibles${expiredNote}`;
   } else {
-    const deals = todayDiscounts.map(d => `<strong>${escapeHtml(d.brand)}</strong> -$${d.discount}/L con ${escapeHtml(d.card)}`).join(' · ');
-    dealsBar.innerHTML = `<strong>Hoy ${dayName}:</strong> ${deals}${expiredNote}`;
+    const deals = dayDiscounts.map(d => `<strong>${escapeHtml(d.brand)}</strong> -$${d.discount}/L con ${escapeHtml(d.card)}`).join(' · ');
+    dealsBar.innerHTML = `<strong>${prefix}:</strong> ${deals}${expiredNote}`;
   }
 }
 
