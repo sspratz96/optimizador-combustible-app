@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-10-23",
+  "lastUpdated": "2026-10-25",
   "validUntil": "2026-10-31",
   "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/",
   "discounts": [
@@ -18,11 +18,11 @@
       "notes": "Tarjeta de crédito Limitless"
     },
     {
-      "id": "banco-bice-shell-diesel-dom",
+      "id": "banco-bice-shell-dom",
       "card": "Banco BICE",
       "cardType": "credito",
       "brand": "Shell",
-      "fuel": "diesel",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         0
