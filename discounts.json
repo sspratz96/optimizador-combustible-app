@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-10-23",
+  "lastUpdated": "2026-10-30",
   "validUntil": "2026-10-31",
   "source": "Extraccion automatica (Claude) desde: https://chocale.cl/2026/10/descuentos-en-bencinas-combustibles-octubre-2026/",
   "discounts": [
@@ -18,11 +18,11 @@
       "notes": "Tarjeta de crédito Limitless"
     },
     {
-      "id": "banco-bice-shell-diesel-dom",
+      "id": "banco-bice-shell-dom",
       "card": "Banco BICE",
       "cardType": "credito",
       "brand": "Shell",
-      "fuel": "diesel",
+      "fuel": null,
       "discountPerLiter": 100,
       "days": [
         0
@@ -276,6 +276,20 @@
       "app": "App Aramco Estaciones",
       "maxMonthly": 10000,
       "notes": "Cashback, Tarjeta Abc Visa o La Polar"
+    },
+    {
+      "id": "cualquier-tarjeta-shell-diesel-jue",
+      "card": "Cualquier tarjeta",
+      "cardType": "credito/debito/prepago",
+      "brand": "Shell",
+      "fuel": "diesel",
+      "discountPerLiter": 50,
+      "days": [
+        4
+      ],
+      "app": "App Shell",
+      "maxMonthly": null,
+      "notes": "Los jueves son el Día del Diésel. Tope de 70 litros. Para acceder a la oferta es necesario pagar con la App Shell e ingresar el código DIESEL 50"
     },
     {
       "id": "scotiabank-shell-jue",
